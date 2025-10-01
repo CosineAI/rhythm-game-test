@@ -662,6 +662,8 @@ footer {
 /* Perspective mode (visual only) */
 .playfield.perspective {
   background: linear-gradient(180deg, #0d1328 0%, #0b0f1f 100%);
+  perspective: 900px;
+  transform-style: preserve-3d;
 }
 .playfield.perspective::before {
   content: '';
@@ -675,29 +677,15 @@ footer {
     linear-gradient(180deg, rgba(180,200,255,0.05), rgba(0,0,0,0.0));
 }
 
-/* Hide flat lane backgrounds; draw tilted planes using ::before */
-.playfield.perspective .lane {
-  background: none;
-}
-.playfield.perspective .lane.white,
-.playfield.perspective .lane.black {
-  background: none;
-}
-.playfield.perspective .lane::before {
-  content: '';
-  position: absolute;
-  left: -8%;
-  right: -8%;
-  bottom: calc(var(--keycaps-h) + 12px);
-  height: 180%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.22));
-  border-left: 1px solid rgba(42,50,70,0.9);
-  border-right: 1px solid rgba(42,50,70,0.9);
+/* Apply a single unified perspective to the entire track (lanes + gridlines) */
+.playfield.perspective .lanes,
+.playfield.perspective .gridlines {
   transform-origin: 50% 100%;
-  transform: perspective(900px) rotateX(55deg);
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
-  pointer-events: none;
-  z-index: 0;
+  transform:
+    translateY(calc(-1 * (var(--keycaps-h) + 12px)))
+    rotateX(52deg)
+    translateY(calc(var(--keycaps-h) + 12px));
+  will-change: transform;
 }
 
 /* Keep notes and hit-line flat and above the tilted scenery */
