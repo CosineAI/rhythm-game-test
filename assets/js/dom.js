@@ -44,6 +44,7 @@
   const fallSpeedRange = $('#fallSpeed');
   const fallSpeedNumber = $('#fallSpeedNumber');
   const showGridlines = $('#showGridlines');
+  const perspectiveMode = $('#perspectiveMode');
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
 
@@ -83,6 +84,7 @@
     fallSpeedRange,
     fallSpeedNumber,
     showGridlines,
+    perspectiveMode,
     settingsSave,
     settingsCancel
   };

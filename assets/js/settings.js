@@ -4,7 +4,7 @@
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
+      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, perspectiveEnabled: false };
       const obj = JSON.parse(raw);
       const kb = Array.isArray(obj.keyBindings) && obj.keyBindings.length === 5 ? obj.keyBindings : ['z','s','x','d','c'];
       return {
@@ -13,10 +13,11 @@
         chartPadMs: typeof obj.chartPadMs === 'number' ? obj.chartPadMs : 3000,
         keyBindings: kb.map(k => String(k || '').toLowerCase().slice(0,1)),
         fallSpeedMult: (typeof obj.fallSpeedMult === 'number' && obj.fallSpeedMult > 0) ? obj.fallSpeedMult : 1.0,
-        gridlinesEnabled: !!obj.gridlinesEnabled
+        gridlinesEnabled: !!obj.gridlinesEnabled,
+        perspectiveEnabled: !!obj.perspectiveEnabled
       };
     } catch {
-      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
+      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, perspectiveEnabled: false };
     }
   }
 
@@ -111,6 +112,18 @@
     save(cache);
   }
 
+  function getPerspectiveEnabled() {
+    return !!cache.perspectiveEnabled;
+  }
+
+  function setPerspectiveEnabled(v) {
+    cache.perspectiveEnabled = !!v;
+    save(cache);
+    if (window.RG.UI && window.RG.UI.applyPerspective) {
+      window.RG.UI.applyPerspective(cache.perspectiveEnabled);
+    }
+  }
+
   function openModal() {
     const {
       settingsModal,
@@ -122,6 +135,7 @@
       keyBind0, keyBind1, keyBind2, keyBind3, keyBind4,
       fallSpeedRange, fallSpeedNumber,
       showGridlines,
+      perspectiveMode,
       difficultySelect
     } = window.RG.Dom;
     if (!settingsModal) return;
@@ -148,6 +162,7 @@
     if (fallSpeedNumber) fallSpeedNumber.value = String(mult);
 
     if (showGridlines) showGridlines.checked = getGridlinesEnabled();
+    if (perspectiveMode) perspectiveMode.checked = getPerspectiveEnabled();
 
     settingsModal.classList.remove('hidden');
     settingsModal.setAttribute('aria-hidden', 'false');
@@ -172,10 +187,12 @@
       keyBind0, keyBind1, keyBind2, keyBind3, keyBind4,
       fallSpeedRange, fallSpeedNumber,
       showGridlines,
+      perspectiveMode,
       settingsSave,
       settingsCancel,
       difficultySelect,
-      statusEl
+      statusEl,
+      playfield
     } = window.RG.Dom;
 
     // Apply persisted difficulty to the visible control
@@ -184,6 +201,11 @@
       difficultySelect.value = d;
       // Trigger a layout update to match
       window.RG.UI.applyKeyLayout();
+    }
+
+    // Apply persisted perspective mode on load
+    if (window.RG.UI && window.RG.UI.applyPerspective) {
+      window.RG.UI.applyPerspective(getPerspectiveEnabled());
     }
 
     // On init, refresh keycap labels based on current bindings
@@ -252,6 +274,7 @@
 
       const fall = fallSpeedNumber ? Number(fallSpeedNumber.value) : 1.0;
       const grid = showGridlines ? !!showGridlines.checked : false;
+      const persp = perspectiveMode ? !!perspectiveMode.checked : false;
 
       setDifficulty(diff);
       setInputOffsetMs(off);
@@ -269,6 +292,7 @@
       }
 
       setGridlinesEnabled(grid);
+      setPerspectiveEnabled(persp);
 
       if (difficultySelect) {
         difficultySelect.value = diff;
@@ -312,6 +336,8 @@
     getFallSpeedMult,
     setFallSpeedMult,
     getGridlinesEnabled,
-    setGridlinesEnabled
+    setGridlinesEnabled,
+    getPerspectiveEnabled,
+    setPerspectiveEnabled
   };
 })();
