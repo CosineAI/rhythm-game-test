@@ -29,6 +29,7 @@
 
   // Settings modal elements
   const openSettingsBtn = $('#openSettingsBtn');
+  const fullscreenBtn = $('#fullscreenBtn');
   const settingsModal = $('#settingsModal');
   const settingsDifficulty = $('#settingsDifficulty');
   const inputLagRange = $('#inputLag');
@@ -67,6 +68,7 @@
     scoreboardEl,
     scoreValueEl,
     openSettingsBtn,
+    fullscreenBtn,
     settingsModal,
     settingsDifficulty,
     inputLagRange,

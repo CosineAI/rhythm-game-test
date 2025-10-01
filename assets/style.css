@@ -38,6 +38,25 @@ main {
 .game {
   width: min(900px, 96vw);
 }
+.game.fullscreen {
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0 auto;
+}
+.game.fullscreen .topbar,
+.game.fullscreen .controls,
+.game.fullscreen .instructions {
+  display: none;
+}
+.game.fullscreen .playfield {
+  max-width: 900px;
+  min-height: 0;
+  height: calc(100vh - 96px);
+}
+.game.fullscreen .scoreboard {
+  max-width: 900px;
+  margin: 8px auto 0;
+}
 
 .topbar {
   display: flex;
