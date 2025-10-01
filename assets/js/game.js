@@ -1,0 +1,165 @@
+(() => {
+  const { statusEl, audioEl, playChartBtn, fileInput } = window.RG.Dom;
+  const { measure, clearNotes } = window.RG.State;
+
+  async function startChartPlayback(state, file) {
+    state.mode = 'chart';
+
+    try {
+      await window.RG.Audio.setupFileAudio(state, file);
+    } catch (err) {
+      console.error('Audio file error:', err);
+      statusEl.textContent = 'Could not load audio file.';
+      return;
+    }
+
+    // Build schedule from precomputed chart
+    const chart = state.precomputedChart;
+    if (!chart || !chart.notes || !chart.notes.length) {
+      statusEl.textContent = 'No chart available. Analyze first.';
+      return;
+    }
+
+    const travelDist = Math.max(0, state.hitY - (window.RG.Const.NOTE_H / 2));
+    const travelTimeMs = (travelDist / window.RG.Const.SPEED) * 1000;
+
+    state.schedule = chart.notes.map(n => ({
+      t: Math.max(0, n.timeMs - travelTimeMs),
+      lane: n.lane
+    }));
+    state.schedule.sort((a, b) => a.t - b.t);
+    state.nextSpawnIdx = 0;
+
+    try {
+      await state.audioCtx.resume();
+      await audioEl.play();
+    } catch (err) {
+      console.error('Playback error:', err);
+      statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+      return;
+    }
+
+    state.startAt = performance.now();
+    state.audioBaseTime = state.audioCtx.currentTime;
+
+    state.running = true;
+    state.ended = false;
+    statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.difficulty || 'Normal'} (${chart.notes.length} notes)`;
+
+    const onEnded = () => endGame(state);
+    audioEl.addEventListener('ended', onEnded, { once: true });
+
+    state.raf = requestAnimationFrame(ts => tick(state, ts));
+  }
+
+  async function startGame(state) {
+    if (state.running) return;
+
+    // Preserve any precomputed chart across reset
+    const prevChart = state.precomputedChart;
+
+    clearNotes(state);
+    window.RG.State.state = Object.assign(window.RG.State.resetState(), {});
+    state = window.RG.State.state;
+    state.precomputedChart = prevChart;
+    measure(state);
+
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    const hasChart = !!(file && state.precomputedChart && state.precomputedChart.fileName === file.name);
+
+    if (hasChart && (state.preferChartOnStart || true)) {
+      state.preferChartOnStart = false;
+      await startChartPlayback(state, file);
+      return;
+    }
+
+    if (file) {
+      state.mode = 'file';
+      try {
+        await window.RG.Audio.setupFileAudio(state, file);
+      } catch (err) {
+        console.error('Audio file error:', err);
+        statusEl.textContent = 'Could not load audio file.';
+        return;
+      }
+      try {
+        await state.audioCtx.resume();
+        await audioEl.play();
+      } catch (err) {
+        console.error('Playback error:', err);
+        statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+        return;
+      }
+
+      state.startAt = performance.now();
+      state.audioBaseTime = state.audioCtx.currentTime;
+      state.running = true;
+      state.ended = false;
+      statusEl.textContent = `File mode (live analysis): ${file.name} (delay ${window.RG.Const.ANALYSIS_DELAY_MS} ms)`;
+
+      const onEnded = () => endGame(state);
+      audioEl.addEventListener('ended', onEnded, { once: true });
+
+      state.analysisTimer = setInterval(() => window.RG.Analysis.analyzeStep(state), window.RG.Const.ANALYSIS_HOP_MS);
+      state.raf = requestAnimationFrame(ts => tick(state, ts));
+    } else {
+      state.mode = 'live';
+      try {
+        await window.RG.Audio.setupLiveAudio(state);
+      } catch (err) {
+        console.error('Microphone error:', err);
+        statusEl.textContent = 'Mic blocked/unavailable. Live mode requires microphone access.';
+        return;
+      }
+
+      state.startAt = performance.now();
+      state.audioBaseTime = state.audioCtx.currentTime;
+
+      state.running = true;
+      state.ended = false;
+      statusEl.textContent = `Live mode: listening (delay ${window.RG.Const.ANALYSIS_DELAY_MS} ms)… clap, snap, or play music nearby`;
+
+      state.analysisTimer = setInterval(() => window.RG.Analysis.analyzeStep(state), window.RG.Const.ANALYSIS_HOP_MS);
+      state.raf = requestAnimationFrame(ts => tick(state, ts));
+    }
+  }
+
+  function endGame(state) {
+    state.running = false;
+    state.ended = true;
+    cancelAnimationFrame(state.raf);
+    clearInterval(state.analysisTimer);
+    window.RG.UI.comboMiss(state);
+
+    if (state.mode === 'file' || state.mode === 'chart') {
+      try { audioEl.pause(); } catch {}
+      try { audioEl.currentTime = 0; } catch {}
+      if (state.fileUrl) {
+        try { URL.revokeObjectURL(state.fileUrl); } catch {}
+        state.fileUrl = null;
+      }
+      if (state.mediaNode) {
+        try { state.mediaNode.disconnect(); } catch {}
+      }
+      statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
+    } else {
+      if (state.micStream) {
+        state.micStream.getTracks().forEach(t => t.stop());
+      }
+      statusEl.textContent = 'Stopped — press Space to start live mode again';
+    }
+
+    if (state.audioCtx) {
+      state.audioCtx.suspend().catch(()=>{});
+    }
+  }
+
+  function tick(state, ts) {
+    if (!state.running) return;
+    window.RG.Notes.updateNotes(state, ts);
+    state.lastTs = ts;
+    state.raf = requestAnimationFrame(t => tick(state, t));
+  }
+
+  window.RG.Game = { startGame, startChartPlayback, endGame, tick };
+})();
