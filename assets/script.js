@@ -87,8 +87,7 @@
       raf: 0,
 
       // Mode and audio graph
-      mode: 'live',       // 'live' | 'f_codeilnewe</'
-e'
+      mode: 'live',       // 'live' | 'file'
       audioCtx: null,
       analyser: null,
       micStream: null,
