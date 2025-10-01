@@ -919,7 +919,7 @@
       // restart bump animation
       void comboEl.offsetWidth;
       comboEl.classList.add('bump');
-   
+    }
   }
 
   function comboHit() {
