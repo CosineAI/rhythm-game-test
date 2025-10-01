@@ -54,7 +54,7 @@
   const PERFECT_DIST = 12;    // px to hit-line
   const GOOD_DIST = 30;
   const OKAY_DIST = 56;
-  const KEYCAPS_H = 140;      // must match CSS --keycaps-h
+  const KEYCAPS_H = 120;      // must match CSS --keycaps-h
 
   const playfield = document.getElementById('playfield');
   const judgementEl = document.getElementById('judgement');
