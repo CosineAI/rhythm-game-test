@@ -13,6 +13,7 @@
       schedule: [], // { t: msFromStart, lane }
       notes: [],    // { lane, el, spawnAt, y, judged }
       counts: { perfect: 0, good: 0, okay: 0, miss: 0 },
+      score: 0,
       combo: 0,
       maxCombo: 0,
       raf: 0,

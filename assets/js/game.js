@@ -64,6 +64,7 @@
     state = window.RG.State.state;
     state.precomputedChart = prevChart;
     measure(state);
+    if (window.RG.Score && window.RG.Score.reset) window.RG.Score.reset(state);
 
     const file = fileInput && fileInput.files && fileInput.files[0];
     const hasChart = !!(file && state.precomputedChart && state.precomputedChart.fileName === file.name);

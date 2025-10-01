@@ -26,6 +26,9 @@
         window.RG.UI.triggerGlow(lane);
         window.RG.UI.screenShake();
         window.RG.UI.comboHit(state);
+        if (window.RG.Score && window.RG.Score.add) {
+          window.RG.Score.add(state, j);
+        }
       } else {
         // There is a note in this column, but timing was outside windows -> Miss
         window.RG.UI.flash('Miss', 'miss');

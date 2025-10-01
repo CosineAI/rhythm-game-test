@@ -21,6 +21,9 @@
   const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
   const comboToastEl = $('#comboToast');
 
+  const scoreboardEl = $('#scoreboard');
+  const scoreValueEl = $('#scoreValue');
+
   // Settings modal elements
   const openSettingsBtn = $('#openSettingsBtn');
   const settingsModal = $('#settingsModal');
@@ -46,6 +49,8 @@
     comboEl,
     comboValueEl,
     comboToastEl,
+    scoreboardEl,
+    scoreValueEl,
     openSettingsBtn,
     settingsModal,
     settingsDifficulty,

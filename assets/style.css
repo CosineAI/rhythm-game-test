@@ -485,6 +485,39 @@ main {
   100% { transform: rotate(60deg); opacity: 0.0; }
 }
 
+/* Scoreboard under the playfield */
+.scoreboard {
+  width: 100%;
+  max-width: 600px;
+  margin: 10px auto 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+  border: 1px solid #1b2335;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.scoreboard .score-label {
+  color: #9fb3d9;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.scoreboard .score-value {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #7cf48b, #7bcff6);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 4px 16px rgba(124,244,139,0.15);
+}
+
 /* Instructions below the field */
 .instructions {
   color: #9fb3d9;
