@@ -289,6 +289,7 @@ main {
   pointer-events: none;
   background: linear-gradient(180deg, transparent, rgba(0,0,0,0.08) 30%, rgba(0,0,0,0.22));
   border-top: 1px solid #1b2335;
+  z-index: 5;
 }
 /* Three-lane layout for Very Easy difficulty */
 .keycaps.three {
@@ -662,7 +663,8 @@ footer {
 /* Perspective mode (visual only) */
 .playfield.perspective {
   background: linear-gradient(180deg, #0d1328 0%, #0b0f1f 100%);
-  perspective: 900px;
+  perspective: 650px;
+  perspective-origin: 50% calc(100% - var(--keycaps-h) - 12px);
   transform-style: preserve-3d;
 }
 .playfield.perspective::before {
@@ -683,7 +685,7 @@ footer {
   transform-origin: 50% 100%;
   transform:
     translateY(calc(-1 * (var(--keycaps-h) + 12px)))
-    rotateX(52deg)
+    rotateX(64deg)
     translateY(calc(var(--keycaps-h) + 12px));
   will-change: transform;
 }
