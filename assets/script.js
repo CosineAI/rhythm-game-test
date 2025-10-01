@@ -156,22 +156,37 @@
     glow.addEventListener('animationend', () => glow.remove(), { once: true });
   }
 
+  function screenShake() {
+    playfield.classList.remove('shake');
+    void playfield.offsetWidth;
+    playfield.classList.add('shake');
+    playfield.addEventListener('animationend', () => {
+      playfield.classList.remove('shake');
+    }, { once: true });
+  }
+
   function hitLane(lane) {
     if (!state.running) return;
     const { note, dist } = pickCandidate(lane);
     const j = note ? judge(dist) : null;
 
-    if (note && j) {
-      note.judged = true;
-      note.el.classList.add('hit');
-      setTimeout(() => note.el && note.el.remove(), 180);
-      state.counts[j]++;
-      flash(capitalize(j), j);
-      // Send a green glow up the lane for any hit that's at least Okay
-      triggerGlow(lane);
+    if (note) {
+      if (j) {
+        note.judged = true;
+        note.el.classList.add('hit');
+        setTimeout(() => note.el && note.el.remove(), 180);
+        state.counts[j]++;
+        flash(capitalize(j), j);
+        // Effects on successful hits (Okay or better)
+        triggerGlow(lane);
+        screenShake();
+      } else {
+        // There is a note in this column, but timing was outside windows -> Miss
+        flash('Miss', 'miss');
+        state.counts.miss++;
+      }
     } else {
-      flash('Miss', 'miss');
-      state.counts.miss++;
+      // No notes in this column -> no penalty and no Miss flash
     }
 
     const judged = state.counts.perfect + state.counts.good + state.counts.okay + state.counts.miss;
