@@ -29,7 +29,9 @@
       if (!n.el) continue;
       const sinceSpawn = (ts - n.spawnAt) / 1000;
       if (sinceSpawn < 0) continue;
-      n.y = sinceSpawn * SPEED;
+      const mult = (window.RG.Settings && window.RG.Settings.getFallSpeedMult) ? window.RG.Settings.getFallSpeedMult() : 1.0;
+      const effSpeed = SPEED * mult;
+      n.y = sinceSpawn * effSpeed;
       n.el.style.transform = `translateY(${n.y}px)`;
 
       const center = n.y + (NOTE_H / 2);

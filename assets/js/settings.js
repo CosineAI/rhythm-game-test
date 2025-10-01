@@ -4,15 +4,19 @@
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000 };
+      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
       const obj = JSON.parse(raw);
+      const kb = Array.isArray(obj.keyBindings) && obj.keyBindings.length === 5 ? obj.keyBindings : ['z','s','x','d','c'];
       return {
         inputOffsetMs: typeof obj.inputOffsetMs === 'number' ? obj.inputOffsetMs : 0,
         difficulty: (obj.difficulty === 'veryeasy' || obj.difficulty === 'easy' || obj.difficulty === 'hard') ? obj.difficulty : 'normal',
-        chartPadMs: typeof obj.chartPadMs === 'number' ? obj.chartPadMs : 3000
+        chartPadMs: typeof obj.chartPadMs === 'number' ? obj.chartPadMs : 3000,
+        keyBindings: kb.map(k => String(k || '').toLowerCase().slice(0,1)),
+        fallSpeedMult: (typeof obj.fallSpeedMult === 'number' && obj.fallSpeedMult > 0) ? obj.fallSpeedMult : 1.0,
+        gridlinesEnabled: !!obj.gridlinesEnabled
       };
     } catch {
-      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000 };
+      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
     }
   }
 
@@ -54,8 +58,72 @@
     save(cache);
   }
 
+  function getKeyBindings() {
+    const kb = cache.keyBindings || ['z','s','x','d','c'];
+    // Ensure length 5
+    const out = kb.slice(0,5);
+    while (out.length < 5) out.push('');
+    return out;
+  }
+
+  function setKeyBindings(arr) {
+    if (!Array.isArray(arr) || arr.length !== 5) return;
+    const cleaned = arr.map(k => String(k || '').toLowerCase().slice(0,1));
+    // Validate unique, non-empty, non-space
+    const set = new Set();
+    for (const k of cleaned) {
+      if (!k || /\s/.test(k)) return; // invalid
+      set.add(k);
+    }
+    if (set.size !== cleaned.length) return; // duplicates
+    cache.keyBindings = cleaned;
+    save(cache);
+  }
+
+  function getKeyToLane() {
+    const map = {};
+    const binds = getKeyBindings();
+    for (let i = 0; i < binds.length; i++) {
+      map[binds[i]] = i;
+    }
+    return map;
+  }
+
+  function getFallSpeedMult() {
+    const m = cache.fallSpeedMult;
+    return (typeof m === 'number' && m > 0) ? m : 1.0;
+  }
+
+  function setFallSpeedMult(v) {
+    let n = Number(v);
+    if (!isFinite(n) || n <= 0) n = 1.0;
+    n = Math.max(0.5, Math.min(2.0, n));
+    cache.fallSpeedMult = n;
+    save(cache);
+  }
+
+  function getGridlinesEnabled() {
+    return !!cache.gridlinesEnabled;
+  }
+
+  function setGridlinesEnabled(v) {
+    cache.gridlinesEnabled = !!v;
+    save(cache);
+  }
+
   function openModal() {
-    const { settingsModal, settingsDifficulty, inputLagRange, inputLagNumber, chartPadRange, chartPadNumber, difficultySelect } = window.RG.Dom;
+    const {
+      settingsModal,
+      settingsDifficulty,
+      inputLagRange,
+      inputLagNumber,
+      chartPadRange,
+      chartPadNumber,
+      keyBind0, keyBind1, keyBind2, keyBind3, keyBind4,
+      fallSpeedRange, fallSpeedNumber,
+      showGridlines,
+      difficultySelect
+    } = window.RG.Dom;
     if (!settingsModal) return;
     // Prefill from current cache / controls
     const currentDiff = (difficultySelect && difficultySelect.value) || getDifficulty();
@@ -67,6 +135,19 @@
     const pad = getChartPadMs();
     if (chartPadRange) chartPadRange.value = String(pad);
     if (chartPadNumber) chartPadNumber.value = String(pad);
+
+    const binds = getKeyBindings();
+    if (keyBind0) keyBind0.value = String(binds[0] || '').toUpperCase();
+    if (keyBind1) keyBind1.value = String(binds[1] || '').toUpperCase();
+    if (keyBind2) keyBind2.value = String(binds[2] || '').toUpperCase();
+    if (keyBind3) keyBind3.value = String(binds[3] || '').toUpperCase();
+    if (keyBind4) keyBind4.value = String(binds[4] || '').toUpperCase();
+
+    const mult = getFallSpeedMult();
+    if (fallSpeedRange) fallSpeedRange.value = String(mult);
+    if (fallSpeedNumber) fallSpeedNumber.value = String(mult);
+
+    if (showGridlines) showGridlines.checked = getGridlinesEnabled();
 
     settingsModal.classList.remove('hidden');
     settingsModal.setAttribute('aria-hidden', 'false');
@@ -88,6 +169,9 @@
       inputLagNumber,
       chartPadRange,
       chartPadNumber,
+      keyBind0, keyBind1, keyBind2, keyBind3, keyBind4,
+      fallSpeedRange, fallSpeedNumber,
+      showGridlines,
       settingsSave,
       settingsCancel,
       difficultySelect,
@@ -100,6 +184,11 @@
       difficultySelect.value = d;
       // Trigger a layout update to match
       window.RG.UI.applyKeyLayout();
+    }
+
+    // On init, refresh keycap labels based on current bindings
+    if (window.RG.UI && window.RG.UI.refreshKeycapLabels) {
+      window.RG.UI.refreshKeycapLabels();
     }
 
     // Wire open/close
@@ -130,15 +219,56 @@
     if (chartPadRange) chartPadRange.addEventListener('input', () => syncPad(chartPadRange.value));
     if (chartPadNumber) chartPadNumber.addEventListener('input', () => syncPad(chartPadNumber.value));
 
+    // Sync fall speed controls
+    function syncFall(val) {
+      if (fallSpeedRange) fallSpeedRange.value = String(val);
+      if (fallSpeedNumber) fallSpeedNumber.value = String(val);
+    }
+    if (fallSpeedRange) fallSpeedRange.addEventListener('input', () => syncFall(fallSpeedRange.value));
+    if (fallSpeedNumber) fallSpeedNumber.addEventListener('input', () => syncFall(fallSpeedNumber.value));
+
+    // Force single-character uppercase in keybind inputs
+    function normalizeKeyInput(el) {
+      if (!el) return;
+      el.addEventListener('input', () => {
+        const v = (el.value || '').slice(0,1).toUpperCase();
+        el.value = v;
+      });
+    }
+    [keyBind0, keyBind1, keyBind2, keyBind3, keyBind4].forEach(normalizeKeyInput);
+
     // Save
     if (settingsSave) settingsSave.addEventListener('click', () => {
       const diff = settingsDifficulty ? settingsDifficulty.value : 'normal';
       const off = inputLagNumber ? Number(inputLagNumber.value) : 0;
       const pad = chartPadNumber ? Number(chartPadNumber.value) : 3000;
 
+      const k0 = keyBind0 ? keyBind0.value.toLowerCase() : 'z';
+      const k1 = keyBind1 ? keyBind1.value.toLowerCase() : 's';
+      const k2 = keyBind2 ? keyBind2.value.toLowerCase() : 'x';
+      const k3 = keyBind3 ? keyBind3.value.toLowerCase() : 'd';
+      const k4 = keyBind4 ? keyBind4.value.toLowerCase() : 'c';
+      const bindings = [k0,k1,k2,k3,k4];
+
+      const fall = fallSpeedNumber ? Number(fallSpeedNumber.value) : 1.0;
+      const grid = showGridlines ? !!showGridlines.checked : false;
+
       setDifficulty(diff);
       setInputOffsetMs(off);
       setChartPadMs(pad);
+      setFallSpeedMult(fall);
+
+      // Validate bindings (unique and non-empty)
+      const uniq = new Set(bindings);
+      const valid = !bindings.some(k => !k || /\s/.test(k)) && uniq.size === bindings.length;
+      if (valid) {
+        setKeyBindings(bindings);
+        if (window.RG.UI && window.RG.UI.refreshKeycapLabels) window.RG.UI.refreshKeycapLabels();
+      } else if (statusEl) {
+        statusEl.textContent = 'Invalid key bindings: must be 5 unique, non-space characters.';
+      }
+
+      setGridlinesEnabled(grid);
 
       if (difficultySelect) {
         difficultySelect.value = diff;
@@ -151,10 +281,12 @@
         const diffName = window.RG.Difficulty.getDifficultyParams().name;
         const offText = getInputOffsetMs();
         const padText = getChartPadMs();
+        const fallText = getFallSpeedMult().toFixed(2);
+        const keyText = getKeyBindings().map(k => k.toUpperCase()).join(' ');
         if (f) {
-          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diffName}. Input offset ${offText} ms. Chart pad ${padText} ms.`;
+          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diffName}. Offset ${offText}ms. Chart pad ${padText}ms. Fall ${fallText}x. Keys ${keyText}.`;
         } else {
-          statusEl.textContent = `Ready — Difficulty: ${diffName}. Input offset ${offText} ms. Chart pad ${padText} ms.`;
+          statusEl.textContent = `Ready — Difficulty: ${diffName}. Offset ${offText}ms. Chart pad ${padText}ms. Fall ${fallText}x. Keys ${keyText}.`;
         }
       }
 
@@ -173,6 +305,13 @@
     getDifficulty,
     setDifficulty,
     getChartPadMs,
-    setChartPadMs
+    setChartPadMs,
+    getKeyBindings,
+    setKeyBindings,
+    getKeyToLane,
+    getFallSpeedMult,
+    setFallSpeedMult,
+    getGridlinesEnabled,
+    setGridlinesEnabled
   };
 })();

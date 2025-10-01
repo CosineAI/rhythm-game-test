@@ -1,7 +1,6 @@
 (() => {
-  const { KEY_TO_LANE } = window.RG.Const;
   const {
-    keycapNodes,
+    keycapByLane,
     difficultySelect,
     fileInput,
     analyzeBtn,
@@ -50,12 +49,13 @@
         else window.RG.Game.endGame(state);
         return;
       }
-      if (KEY_TO_LANE[key] !== undefined) {
+      const map = (window.RG.Settings && window.RG.Settings.getKeyToLane && window.RG.Settings.getKeyToLane()) || {};
+      const lane = map[key];
+      if (lane !== undefined) {
         if (!e.repeat) {
-          const lane = KEY_TO_LANE[key];
           const active = window.RG.Difficulty.getActiveLaneIndices();
           if (!active.includes(lane)) return;
-          const cap = keycapNodes.get(key);
+          const cap = keycapByLane && keycapByLane[lane];
           if (cap) cap.classList.add('active');
           hitLane(state, lane);
         }
@@ -64,8 +64,10 @@
 
     document.addEventListener('keyup', (e) => {
       const key = e.key.toLowerCase();
-      if (KEY_TO_LANE[key] !== undefined) {
-        const cap = keycapNodes.get(key);
+      const map = (window.RG.Settings && window.RG.Settings.getKeyToLane && window.RG.Settings.getKeyToLane()) || {};
+      const lane = map[key];
+      if (lane !== undefined) {
+        const cap = keycapByLane && keycapByLane[lane];
         if (cap) cap.classList.remove('active');
       }
     });

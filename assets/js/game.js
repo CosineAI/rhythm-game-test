@@ -21,7 +21,9 @@
     }
 
     const travelDist = Math.max(0, state.hitY - (window.RG.Const.NOTE_H / 2));
-    const travelTimeMs = (travelDist / window.RG.Const.SPEED) * 1000;
+    const speedMult = (window.RG.Settings && window.RG.Settings.getFallSpeedMult) ? window.RG.Settings.getFallSpeedMult() : 1.0;
+    const speed = window.RG.Const.SPEED * speedMult;
+    const travelTimeMs = (travelDist / speed) * 1000;
     const userOffsetMs = (window.RG.Settings && window.RG.Settings.getInputOffsetMs()) || 0;
 
     state.schedule = chart.notes.map(n => ({
@@ -30,6 +32,20 @@
     }));
     state.schedule.sort((a, b) => a.t - b.t);
     state.nextSpawnIdx = 0;
+
+    // Build beat grid schedule (experimental)
+    state.beatSchedule = [];
+    state.nextBeatIdx = 0;
+    if (window.RG.Settings && window.RG.Settings.getGridlinesEnabled && window.RG.Settings.getGridlinesEnabled()) {
+      const beats = Array.isArray(chart.beats) ? chart.beats : [];
+      for (let i = 0; i < beats.length; i++) {
+        const t = beats[i];
+        state.beatSchedule.push({
+          t: Math.max(0, (t + userOffsetMs) - travelTimeMs),
+          strong: (i % 4 === 0)
+        });
+      }
+    }
 
     try {
       await state.audioCtx.resume();
@@ -45,7 +61,8 @@
 
     state.running = true;
     state.ended = false;
-    statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.difficulty || 'Normal'} (${chart.notes.length} notes)`;
+    const bpmText = chart.bpm ? ` • ~${Math.round(chart.bpm)} BPM` : '';
+    statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.difficulty || 'Normal'} (${chart.notes.length} notes${bpmText})`;
 
     const onEnded = () => endGame(state);
     audioEl.addEventListener('ended', onEnded, { once: true });
@@ -158,6 +175,7 @@
 
   function tick(state, ts) {
     if (!state.running) return;
+    if (window.RG.Grid && window.RG.Grid.update) window.RG.Grid.update(state, ts);
     window.RG.Notes.updateNotes(state, ts);
     state.lastTs = ts;
     state.raf = requestAnimationFrame(t => tick(state, t));

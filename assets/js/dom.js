@@ -7,6 +7,7 @@
   const lanesContainer = $('#lanes');
   const keycapsContainer = $('#keycaps');
   const lanes = Array.from(document.querySelectorAll('.lane'));
+  const keycapByLane = Array.from(document.querySelectorAll('#keycaps .keycap'));
 
   const { KEY_ORDER } = window.RG.Const;
   const keycapNodes = new Map(KEY_ORDER.map(k => [k, document.querySelector(`.keycap[data-key="${k}"]`)]));
@@ -16,6 +17,8 @@
   const analyzeBtn = $('#analyzeBtn');
   const playChartBtn = $('#playChartBtn');
   const difficultySelect = $('#difficultySelect');
+
+  const gridlinesContainer = $('#gridlines');
 
   const comboEl = $('#combo');
   const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
@@ -32,6 +35,14 @@
   const inputLagNumber = $('#inputLagNumber');
   const chartPadRange = $('#chartPad');
   const chartPadNumber = $('#chartPadNumber');
+  const keyBind0 = $('#keyBind0');
+  const keyBind1 = $('#keyBind1');
+  const keyBind2 = $('#keyBind2');
+  const keyBind3 = $('#keyBind3');
+  const keyBind4 = $('#keyBind4');
+  const fallSpeedRange = $('#fallSpeed');
+  const fallSpeedNumber = $('#fallSpeedNumber');
+  const showGridlines = $('#showGridlines');
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
 
@@ -43,11 +54,13 @@
     keycapsContainer,
     lanes,
     keycapNodes,
+    keycapByLane,
     fileInput,
     audioEl,
     analyzeBtn,
     playChartBtn,
     difficultySelect,
+    gridlinesContainer,
     comboEl,
     comboValueEl,
     comboToastEl,
@@ -60,6 +73,14 @@
     inputLagNumber,
     chartPadRange,
     chartPadNumber,
+    keyBind0,
+    keyBind1,
+    keyBind2,
+    keyBind3,
+    keyBind4,
+    fallSpeedRange,
+    fallSpeedNumber,
+    showGridlines,
     settingsSave,
     settingsCancel
   };
