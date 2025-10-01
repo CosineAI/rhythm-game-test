@@ -8,7 +8,38 @@
 </head>
 <body>
   <main>
-    <h1>Welcome to Your Static Site</h1>
+    <div class="game">
+      <header class="topbar">
+        <h1>Mini Rhythm Game</h1>
+        <div class="status" id="status">Press Space to Start</div>
+      </header>
+
+      <div class="playfield" id="playfield">
+        <div class="lanes" id="lanes">
+          <div class="lane white" data-key="z"></div>
+          <div class="lane black" data-key="s"></div>
+          <div class="lane white" data-key="x"></div>
+          <div class="lane black" data-key="d"></div>
+          <div class="lane white" data-key="c"></div>
+        </div>
+
+        <div class="hit-line" id="hitLine"></div>
+
+        <div class="keycaps" id="keycaps">
+          <div class="keycap white" data-key="z"><span>Z</span></div>
+          <div class="keycap black" data-key="s"><span>S</span></div>
+          <div class="keycap white" data-key="x"><span>X</span></div>
+          <div class="keycap black" data-key="d"><span>D</span></div>
+          <div class="keycap white" data-key="c"><span>C</span></div>
+        </div>
+
+        <div class="judgement" id="judgement"></div>
+      </div>
+
+      <footer class="instructions">
+        <p>Controls: White keys Z X C, Black keys S D. Press Space to start/restart.</p>
+      </footer>
+    </div>
   </main>
   <footer>
     <p>&copy; 2025 Your Name</p>
