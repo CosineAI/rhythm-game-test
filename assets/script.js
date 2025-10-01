@@ -280,13 +280,13 @@
     // Peak picking with adaptive threshold
     const peaks = pickPeaks(onset, timesMs, diff.minSpacingMs, diff.threshK, diff.threshWindow);
 
-    // Assign lanes using spectral centroid near each peak (fallback to bounce)
+    // Assign lanes using 5-band energy mapping near each peak (fallback to bounce)
     const notes = [];
     let prevLane = -1;
     let bounceLane = 0, dir = 1;
     for (let i = 0; i < peaks.length; i++) {
       const t = peaks[i];
-      let lane = laneFromCentroidAt(mono, sr, t);
+      let lane = laneFromBandsAt(mono, sr, t);
       if (lane == null) {
         lane = bounceLane;
         bounceLane += dir;
@@ -394,7 +394,7 @@
 
   // --- Frequency-based lane mapping for precomputed peaks ---
 
-  const _cache = { hann: {}, kIndex: {} };
+  const _cache = { hann: {}, kIndex: {}, edges: {} };
 
   function getHann(N) {
     let w = _cache.hann[N];
@@ -473,6 +473,74 @@
     if (lane < 0) lane = 0;
     if (lane > 4) lane = 4;
     return lane;
+  }
+
+  // Mel scale helpers and 5-band edges
+  function mel(f) { return 1127 * Math.log(1 + f / 700); }
+  function invMel(m) { return 700 * (Math.exp(m / 1127) - 1); }
+
+  function getBandEdges(sampleRate, minHz, maxHz) {
+    const key = sampleRate + ':' + minHz + ':' + maxHz;
+    let edges = _cache.edges[key];
+    if (edges) return edges;
+    const nyquist = sampleRate / 2;
+    const lo = Math.max(60, Math.min(minHz, nyquist));
+    const hi = Math.max(lo + 10, Math.min(maxHz, nyquist));
+    const melLo = mel(lo), melHi = mel(hi);
+    edges = new Float32Array(6);
+    for (let i = 0; i <= 5; i++) {
+      const m = melLo + (melHi - melLo) * (i / 5);
+      edges[i] = invMel(m);
+    }
+    _cache.edges[key] = edges;
+    return edges;
+  }
+
+  // 5-band energy mapping around a given time to decide lane
+  function laneFromBandsAt(samples, sampleRate, timeMs) {
+    const N = 1024;
+    const half = N >> 1;
+    let center = Math.floor((timeMs / 1000) * sampleRate);
+    let start = center - half;
+    if (start < 0) start = 0;
+    if (start + N > samples.length) start = samples.length - N;
+    if (start < 0) return null;
+
+    const win = getHann(N);
+    const frame = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      frame[i] = samples[start + i] * win[i];
+    }
+
+    const BINS = 96;
+    const kIndex = getKIndex(N, BINS);
+    const nyquist = sampleRate / 2;
+    const minHz = 120;
+    const maxHz = Math.min(4000, nyquist);
+    const edges = getBandEdges(sampleRate, minHz, maxHz);
+    const energies = new Float32Array(5);
+
+    for (let b = 0; b < BINS; b++) {
+      const k = kIndex[b];
+      const freq = (k * sampleRate) / N;
+      if (freq < edges[0] || freq > edges[5]) continue;
+      const p = goertzelPower(frame, k, N);
+      if (p <= 0) continue;
+      let j = 0;
+      while (j < 5 && freq > edges[j + 1]) j++;
+      if (j < 5) energies[j] += p;
+    }
+
+    // Slight bias to upper bands so the top lane (C) appears when appropriate
+    const weights = [1.0, 1.0, 1.05, 1.12, 1.18];
+    let best = -1, bestVal = -1, sum = 0;
+    for (let i = 0; i < 5; i++) {
+      sum += energies[i];
+      const v = energies[i] * weights[i];
+      if (v > bestVal) { bestVal = v; best = i; }
+    }
+    if (sum <= 1e-9) return null;
+    return best;
   }
 
   async function startGame() {
@@ -677,23 +745,39 @@
   }
 
   function assignLane(amp) {
-    // Map spectral centroid to lane (0..4)
+    // 5-band mapping in live mode using analyser spectrum
     const N = amp.length;
-    const nyquist = state.audioCtx ? state.audioCtx.sampleRate / 2 : 22050;
-    let num = 0, den = 0;
+    const sampleRate = state.audioCtx ? state.audioCtx.sampleRate : 44100;
+    const nyquist = sampleRate / 2;
+    const edges = getBandEdges(sampleRate, 120, Math.min(4000, nyquist));
+    const energies = new Float32Array(5);
+
     for (let i = 0; i < N; i++) {
       const f = (i / (N - 1)) * nyquist;
       const a = amp[i];
-      num += f * a;
-      den += a;
+      if (f < edges[0] || f > edges[5]) continue;
+      let j = 0;
+      while (j < 5 && f > edges[j + 1]) j++;
+      if (j < 5) {
+        const e = a * a; // energy
+        energies[j] += e;
+      }
     }
-    let norm = 0.5;
-    if (den > 1e-9) {
-      const centroid = num / den;
-      norm = Math.min(1, Math.max(0, centroid / nyquist));
+
+    const weights = [1.0, 1.0, 1.05, 1.12, 1.18];
+    let best = -1, bestVal = -1, sum = 0;
+    for (let b = 0; b < 5; b++) {
+      sum += energies[b];
+      const v = energies[b] * weights[b];
+      if (v > bestVal) { bestVal = v; best = b; }
     }
-    let lane = Math.min(4, Math.max(0, Math.floor(norm * 5)));
-    if (lane === state.prevLane) lane = (lane + 1) % 5; // avoid repeated jacks
+    let lane;
+    if (sum <= 1e-9) {
+      lane = (state.prevLane + 1) % 5; // fallback rotate
+    } else {
+      lane = best;
+    }
+    if (lane === state.prevLane) lane = (lane + 1) % 5;
     state.prevLane = lane;
     return lane;
   }
