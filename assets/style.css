@@ -98,6 +98,33 @@ main {
   box-shadow: 0 0 8px rgba(144,234,144,0.6);
 }
 
+/* Upward green glow effect on successful hits */
+.lane .glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--keycaps-h) + 12px - 4px);
+  height: 160px;
+  background: linear-gradient(180deg,
+    rgba(124, 244, 139, 0.45),
+    rgba(124, 244, 139, 0.18) 55%,
+    rgba(124, 244, 139, 0)
+  );
+  filter: blur(2px);
+  opacity: 0.9;
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: glowUp 560ms ease-out forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes glowUp {
+  0%   { transform: translateY(0); opacity: 0.95; }
+  70%  { opacity: 0.85; }
+  100% { transform: translateY(-1200px); opacity: 0; }
+}
+
 /* Notes */
 .note {
   position: absolute;

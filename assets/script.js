@@ -147,6 +147,15 @@
     }, 420);
   }
 
+  function triggerGlow(lane) {
+    const laneEl = lanes[lane];
+    if (!laneEl) return;
+    const glow = document.createElement('div');
+    glow.className = 'glow';
+    laneEl.appendChild(glow);
+    glow.addEventListener('animationend', () => glow.remove(), { once: true });
+  }
+
   function hitLane(lane) {
     if (!state.running) return;
     const { note, dist } = pickCandidate(lane);
@@ -158,6 +167,8 @@
       setTimeout(() => note.el && note.el.remove(), 180);
       state.counts[j]++;
       flash(capitalize(j), j);
+      // Send a green glow up the lane for any hit that's at least Okay
+      triggerGlow(lane);
     } else {
       flash('Miss', 'miss');
       state.counts.miss++;
