@@ -945,8 +945,8 @@
       updateComboUI({ pop: firstShow, bump: !firstShow || state.combo > 10 });
       // Per-hit combo toast
       flashComboCount();
-      // Burst on first reach and every multiple of 10
-      if (state.combo === 10 || state.combo % 10 === 0) comboBurst();
+      // Burst glow on every combo >= 10
+      comboBurst();
     } else {
       // Pre-10: keep value in sync (not visible yet)
       updateComboUI();
