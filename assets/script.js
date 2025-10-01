@@ -15,11 +15,19 @@
 
   function getDifficulty() {
     const v = difficultySelect && difficultySelect.value || 'normal';
-    return (v === 'easy' || v === 'hard') ? v : 'normal';
+    return (v === 'veryeasy' || v === 'easy' || v === 'hard') ? v : 'normal';
   }
   function getDifficultyParams() {
     const d = getDifficulty();
-    if (d === 'easy') {
+    if (d === 'veryeasy') {
+      return {
+        name: 'Very Easy',
+        threshK: 1.8,
+        minSpacingMs: 320,
+        smoothRadius: 5,
+        threshWindow: 52
+      };
+    } else if (d === 'easy') {
       return {
         name: 'Easy',
         threshK: 1.6,
@@ -49,6 +57,38 @@
   const KEY_TO_LANE = { z: 0, s: 1, x: 2, d: 3, c: 4 };
   const LANE_TYPES = ['white', 'black', 'white', 'black', 'white'];
 
+  function getActiveLaneIndices() {
+    const d = getDifficulty();
+    return d === 'veryeasy' ? [0, 2, 4] : [0, 1, 2, 3, 4];
+  }
+
+  function applyKeyLayout() {
+    const d = getDifficulty();
+    if (d === 'veryeasy') {
+      if (lanesContainer) lanesContainer.classList.add('three');
+      if (keycapsContainer) keycapsContainer.classList.add('three');
+      // hide black lanes and keycaps
+      for (const laneEl of lanes) {
+        if (laneEl.classList.contains('black')) laneEl.classList.add('hidden');
+        else laneEl.classList.remove('hidden');
+      }
+      for (const [k, el] of keycapNodes.entries()) {
+        if (!el) continue;
+        if (el.classList.contains('black')) el.classList.add('hidden');
+        else el.classList.remove('hidden');
+      }
+    } else {
+      if (lanesContainer) lanesContainer.classList.remove('three');
+      if (keycapsContainer) keycapsContainer.classList.remove('three');
+      for (const laneEl of lanes) {
+        laneEl.classList.remove('hidden');
+      }
+      for (const [, el] of keycapNodes.entries()) {
+        if (el) el.classList.remove('hidden');
+      }
+    }
+  }
+
   const NOTE_H = 24;          // px
   const SPEED = 420;          // px/s
   const PERFECT_DIST = 12;    // px to hit-line
@@ -59,6 +99,8 @@
   const playfield = document.getElementById('playfield');
   const judgementEl = document.getElementById('judgement');
   const statusEl = document.getElementById('status');
+  const lanesContainer = document.getElementById('lanes');
+  const keycapsContainer = document.getElementById('keycaps');
   const lanes = Array.from(document.querySelectorAll('.lane'));
   const keycapNodes = new Map(KEY_ORDER.map(k => [k, document.querySelector(`.keycap[data-key="${k}"]`)]));
   const fileInput = document.getElementById('audioFile');
@@ -71,6 +113,7 @@
   const comboToastEl = document.getElementById('comboToast');
 
   let state = resetState();
+  applyKeyLayout();
 
   function resetState() {
     return {
@@ -285,21 +328,23 @@
     // Peak picking with adaptive threshold
     const peaks = pickPeaks(onset, timesMs, diff.minSpacingMs, diff.threshK, diff.threshWindow);
 
-    // Assign lanes using 5-band energy mapping near each peak (fallback to bounce)
+    // Assign lanes using multi-band energy mapping near each peak (fallback to bounce)
     const notes = [];
     let prevLane = -1;
-    let bounceLane = 0, dir = 1;
+    const activeLanes = getActiveLaneIndices();
+    let bouncePtr = 0, dir = 1;
     for (let i = 0; i < peaks.length; i++) {
       const t = peaks[i];
-      let lane = laneFromBandsAt(mono, sr, t);
+      let lane = laneFromBandsAt(mono, sr, t, activeLanes);
       if (lane == null) {
-        lane = bounceLane;
-        bounceLane += dir;
-        if (bounceLane >= 4) { bounceLane = 4; dir = -1; }
-        if (bounceLane <= 0) { bounceLane = 0; dir = 1; }
+        lane = activeLanes[bouncePtr];
+        bouncePtr += dir;
+        if (bouncePtr >= activeLanes.length - 1) { bouncePtr = activeLanes.length - 1; dir = -1; }
+        if (bouncePtr <= 0) { bouncePtr = 0; dir = 1; }
       }
       if (lane === prevLane) {
-        lane = (lane + 1) % 5;
+        const idx = activeLanes.indexOf(lane);
+        lane = activeLanes[(idx + 1) % activeLanes.length];
       }
       notes.push({ timeMs: t, lane });
       prevLane = lane;
@@ -484,25 +529,25 @@
   function mel(f) { return 1127 * Math.log(1 + f / 700); }
   function invMel(m) { return 700 * (Math.exp(m / 1127) - 1); }
 
-  function getBandEdges(sampleRate, minHz, maxHz) {
-    const key = sampleRate + ':' + minHz + ':' + maxHz;
+  function getBandEdges(sampleRate, minHz, maxHz, bandCount = 5) {
+    const key = sampleRate + ':' + minHz + ':' + maxHz + ':' + bandCount;
     let edges = _cache.edges[key];
     if (edges) return edges;
     const nyquist = sampleRate / 2;
     const lo = Math.max(60, Math.min(minHz, nyquist));
     const hi = Math.max(lo + 10, Math.min(maxHz, nyquist));
     const melLo = mel(lo), melHi = mel(hi);
-    edges = new Float32Array(6);
-    for (let i = 0; i <= 5; i++) {
-      const m = melLo + (melHi - melLo) * (i / 5);
+    edges = new Float32Array(bandCount + 1);
+    for (let i = 0; i <= bandCount; i++) {
+      const m = melLo + (melHi - melLo) * (i / bandCount);
       edges[i] = invMel(m);
     }
     _cache.edges[key] = edges;
     return edges;
   }
 
-  // 5-band energy mapping around a given time to decide lane
-  function laneFromBandsAt(samples, sampleRate, timeMs) {
+  // Multi-band energy mapping around a given time to decide lane
+  function laneFromBandsAt(samples, sampleRate, timeMs, laneIndices) {
     const N = 1024;
     const half = N >> 1;
     let center = Math.floor((timeMs / 1000) * sampleRate);
@@ -522,30 +567,35 @@
     const nyquist = sampleRate / 2;
     const minHz = 120;
     const maxHz = Math.min(4000, nyquist);
-    const edges = getBandEdges(sampleRate, minHz, maxHz);
-    const energies = new Float32Array(5);
+
+    const bandCount = Math.max(1, (laneIndices && laneIndices.length) || 5);
+    const edges = getBandEdges(sampleRate, minHz, maxHz, bandCount);
+    const energies = new Float32Array(bandCount);
 
     for (let b = 0; b < BINS; b++) {
       const k = kIndex[b];
       const freq = (k * sampleRate) / N;
-      if (freq < edges[0] || freq > edges[5]) continue;
+      if (freq < edges[0] || freq > edges[bandCount]) continue;
       const p = goertzelPower(frame, k, N);
       if (p <= 0) continue;
       let j = 0;
-      while (j < 5 && freq > edges[j + 1]) j++;
-      if (j < 5) energies[j] += p;
+      while (j < bandCount && freq > edges[j + 1]) j++;
+      if (j < bandCount) energies[j] += p;
     }
 
-    // Slight bias to upper bands so the top lane (C) appears when appropriate
-    const weights = [1.0, 1.0, 1.05, 1.12, 1.18];
+    const weights = (bandCount === 3) ? [1.0, 1.05, 1.12]
+                    : (bandCount === 5) ? [1.0, 1.0, 1.05, 1.12, 1.18]
+                    : new Array(bandCount).fill(1.0);
+
     let best = -1, bestVal = -1, sum = 0;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < bandCount; i++) {
       sum += energies[i];
       const v = energies[i] * weights[i];
       if (v > bestVal) { bestVal = v; best = i; }
     }
     if (sum <= 1e-9) return null;
-    return best;
+    const lanesArr = laneIndices && laneIndices.length ? laneIndices : [0,1,2,3,4];
+    return lanesArr[best] ?? null;
   }
 
   async function startGame() {
@@ -751,39 +801,49 @@
   }
 
   function assignLane(amp) {
-    // 5-band mapping in live mode using analyser spectrum
+    // Multi-band mapping in live mode using analyser spectrum; adapts to lane count
     const N = amp.length;
     const sampleRate = state.audioCtx ? state.audioCtx.sampleRate : 44100;
     const nyquist = sampleRate / 2;
-    const edges = getBandEdges(sampleRate, 120, Math.min(4000, nyquist));
-    const energies = new Float32Array(5);
+    const activeLanes = getActiveLaneIndices();
+    const bandCount = activeLanes.length;
+    const edges = getBandEdges(sampleRate, 120, Math.min(4000, nyquist), bandCount);
+    const energies = new Float32Array(bandCount);
 
     for (let i = 0; i < N; i++) {
       const f = (i / (N - 1)) * nyquist;
       const a = amp[i];
-      if (f < edges[0] || f > edges[5]) continue;
+      if (f < edges[0] || f > edges[bandCount]) continue;
       let j = 0;
-      while (j < 5 && f > edges[j + 1]) j++;
-      if (j < 5) {
+      while (j < bandCount && f > edges[j + 1]) j++;
+      if (j < bandCount) {
         const e = a * a; // energy
         energies[j] += e;
       }
     }
 
-    const weights = [1.0, 1.0, 1.05, 1.12, 1.18];
+    const weights = (bandCount === 3) ? [1.0, 1.05, 1.12]
+                    : (bandCount === 5) ? [1.0, 1.0, 1.05, 1.12, 1.18]
+                    : new Array(bandCount).fill(1.0);
     let best = -1, bestVal = -1, sum = 0;
-    for (let b = 0; b < 5; b++) {
+    for (let b = 0; b < bandCount; b++) {
       sum += energies[b];
       const v = energies[b] * weights[b];
       if (v > bestVal) { bestVal = v; best = b; }
     }
+
     let lane;
     if (sum <= 1e-9) {
-      lane = (state.prevLane + 1) % 5; // fallback rotate
+      // fallback rotate within active lanes
+      const prevIdx = Math.max(0, activeLanes.indexOf(state.prevLane));
+      lane = activeLanes[(prevIdx + 1) % bandCount];
     } else {
-      lane = best;
+      lane = activeLanes[best];
     }
-    if (lane === state.prevLane) lane = (lane + 1) % 5;
+    if (lane === state.prevLane) {
+      const idx = activeLanes.indexOf(lane);
+      lane = activeLanes[(idx + 1) % bandCount];
+    }
     state.prevLane = lane;
     return lane;
   }
@@ -1024,9 +1084,12 @@
     }
     if (KEY_TO_LANE[key] !== undefined) {
       if (!e.repeat) {
+        const lane = KEY_TO_LANE[key];
+        const active = getActiveLaneIndices();
+        if (!active.includes(lane)) return;
         const cap = keycapNodes.get(key);
         if (cap) cap.classList.add('active');
-        hitLane(KEY_TO_LANE[key]);
+        hitLane(lane);
       }
     }
   });
@@ -1059,6 +1122,7 @@
 
   if (difficultySelect) {
     difficultySelect.addEventListener('change', () => {
+      applyKeyLayout();
       const f = fileInput.files && fileInput.files[0];
       if (f) {
         const diff = getDifficultyParams().name;

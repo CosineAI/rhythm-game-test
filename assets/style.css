@@ -139,6 +139,9 @@ main {
   position: relative;
   height: min(68vh, 640px);
   min-height: 520px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   background: linear-gradient(180deg, #0f1426 0%, #0c1120 100%);
   border: 1px solid #1b2335;
   border-radius: 10px;
@@ -154,6 +157,11 @@ main {
   grid-template-columns: repeat(5, 1fr);
   pointer-events: none;
 }
+/* Three-lane layout for Very Easy difficulty */
+.lanes.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+.lane.hidden { display: none; }
 
 .lane {
   position: relative;
@@ -260,6 +268,11 @@ main {
   background: linear-gradient(180deg, transparent, rgba(0,0,0,0.08) 30%, rgba(0,0,0,0.22));
   border-top: 1px solid #1b2335;
 }
+/* Three-lane layout for Very Easy difficulty */
+.keycaps.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+.keycap.hidden { display: none; }
 
 .keycap {
   position: relative;
