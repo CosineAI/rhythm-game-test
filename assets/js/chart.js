@@ -62,13 +62,17 @@
     // Peak picking with adaptive threshold
     const peaks = pickPeaks(onset, timesMs, diff.minSpacingMs, diff.threshK, diff.threshWindow);
 
+    // Exclude notes in the first/last 3 seconds
+    const PAD_MS = 3000;
+    const list = peaks.filter(t => t >= PAD_MS && t <= (durationMs - PAD_MS));
+
     // Assign lanes using multi-band energy mapping near each peak (fallback to bounce)
     const notes = [];
     let prevLane = -1;
     const activeLanes = getActiveLaneIndices();
     let bouncePtr = 0, dir = 1;
-    for (let i = 0; i < peaks.length; i++) {
-      const t = peaks[i];
+    for (let i = 0; i < list.length; i++) {
+      const t = list[i];
       let lane = laneFromBandsAt(mono, sr, t, activeLanes);
       if (lane == null) {
         lane = activeLanes[bouncePtr];
