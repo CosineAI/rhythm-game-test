@@ -1,4 +1,11 @@
 (() => {
+  const ANALYSIS_DELAY_MS = 2000; // ms lookahead before scheduling visible notes
+  const FFT_SIZE = 2048;          // analyser FFT size
+  const ANALYSIS_HOP_MS = 20;     // how often we analyze (approx)
+  const MIN_ONSET_INTERVAL_MS = 120; // refractory period for onsets
+  const THRESH_WINDOW = 30;       // flux history window size (samples)
+  const THRESH_K = 1.5;           // threshold multiplier
+
   const KEY_ORDER = ['z','s','x','d','c'];
   const KEY_TO_LANE = { z: 0, s: 1, x: 2, d: 3, c: 4 };
   const LANE_TYPES = ['white', 'black', 'white', 'black', 'white'];
@@ -9,9 +16,6 @@
   const GOOD_DIST = 30;
   const OKAY_DIST = 56;
   const KEYCAPS_H = 140;      // must match CSS --keycaps-h
-
-  const TOTAL_NOTES = 10;
-  const GAP_MS = 600;
 
   const playfield = document.getElementById('playfield');
   const judgementEl = document.getElementById('judgement');
@@ -29,10 +33,24 @@
       lastTs: 0,
       hitY: 0,
       nextSpawnIdx: 0,
-      schedule: [],
-      notes: [], // { lane, el, spawnAt, y, judged }
+      schedule: [], // { t: msFromStart, lane }
+      notes: [],    // { lane, el, spawnAt, y, judged }
       counts: { perfect: 0, good: 0, okay: 0, miss: 0 },
-      raf: 0
+      raf: 0,
+
+      // Live audio analysis state
+      audioCtx: null,
+      analyser: null,
+      micStream: null,
+      source: null,
+      audioBaseTime: 0,  // AudioContext.currentTime when game starts (aligns with performance.now)
+      analysisTimer: 0,
+      prevAmp: null,
+      fluxBuf: [],
+      lastFlux: 0,
+      lastOnsetTimeSec: -1e9,
+      prevLane: -1,
+      scratchFreq: null
     };
   }
 
@@ -41,40 +59,168 @@
     state.hitY = pfRect.height - KEYCAPS_H - 12;
   }
 
-  function makeSchedule(count) {
-    const schedule = [];
-    let t = 700;
-    for (let i = 0; i < count; i++) {
-      const lane = Math.floor(Math.random() * 5);
-      const jitter = (Math.random() * 180) - 90;
-      schedule.push({ t: t + jitter, lane });
-      t += GAP_MS;
-    }
-    return schedule;
-  }
-
   function clearNotes() {
     state.notes.forEach(n => n.el && n.el.remove());
     state.notes.length = 0;
   }
 
-  function startGame() {
+  async function setupLiveAudio() {
+    if (state.audioCtx && state.audioCtx.state === 'suspended') {
+      await state.audioCtx.resume();
+      return;
+    }
+
+    statusEl.textContent = 'Requesting microphone…';
+    const constraints = {
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = FFT_SIZE;
+    analyser.smoothingTimeConstant = 0.0;
+    analyser.minDecibels = -100;
+    analyser.maxDecibels = -10;
+
+    const source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    state.audioCtx = audioCtx;
+    state.analyser = analyser;
+    state.source = source;
+    state.micStream = stream;
+    state.prevAmp = new Float32Array(analyser.frequencyBinCount);
+    state.scratchFreq = new Float32Array(analyser.frequencyBinCount);
+  }
+
+  async function startGame() {
+    if (state.running) return;
+
     clearNotes();
-    state = resetState();
+    state = Object.assign(resetState(), {});
     measure();
-    state.schedule = makeSchedule(TOTAL_NOTES);
+
+    try {
+      await setupLiveAudio();
+    } catch (err) {
+      console.error('Microphone error:', err);
+      statusEl.textContent = 'Mic blocked/unavailable. Live mode requires microphone access.';
+      return;
+    }
+
+    // Align game time (performance.now) and audio time (AudioContext.currentTime)
     state.startAt = performance.now();
-    state.lastTs = state.startAt;
+    state.audioBaseTime = state.audioCtx.currentTime;
+
     state.running = true;
-    statusEl.textContent = 'Game on — hit the notes!';
+    state.ended = false;
+    statusEl.textContent = `Live mode: listening (delay ${ANALYSIS_DELAY_MS} ms)… clap, snap, or play music nearby`;
+
+    state.analysisTimer = setInterval(analyzeStep, ANALYSIS_HOP_MS);
     state.raf = requestAnimationFrame(tick);
   }
 
   function endGame() {
     state.running = false;
     state.ended = true;
-    statusEl.textContent = 'Finished — press Space to restart';
     cancelAnimationFrame(state.raf);
+    clearInterval(state.analysisTimer);
+    if (state.micStream) {
+      state.micStream.getTracks().forEach(t => t.stop());
+    }
+    if (state.audioCtx) {
+      state.audioCtx.suspend().catch(()=>{});
+    }
+    statusEl.textContent = 'Stopped — press Space to start live mode again';
+  }
+
+  function analyzeStep() {
+    if (!state.running || !state.analyser) return;
+
+    const N = state.analyser.frequencyBinCount;
+    const freqDb = state.scratchFreq;
+    state.analyser.getFloatFrequencyData(freqDb);
+
+    // Convert dB to linear amplitude
+    const amp = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const db = Math.max(-120, freqDb[i]);
+      amp[i] = Math.pow(10, db / 20);
+    }
+
+    // Spectral flux
+    let flux = 0;
+    if (state.prevAmp) {
+      for (let i = 0; i < N; i++) {
+        const d = amp[i] - state.prevAmp[i];
+        if (d > 0) flux += d;
+      }
+    }
+    state.prevAmp = amp;
+
+    const tSec = state.audioCtx.currentTime;
+    state.fluxBuf.push(flux);
+    if (state.fluxBuf.length > THRESH_WINDOW) state.fluxBuf.shift();
+
+    const mean = state.fluxBuf.reduce((a,b)=>a+b,0) / state.fluxBuf.length;
+    let variance = 0;
+    for (let i = 0; i < state.fluxBuf.length; i++) {
+      const d = state.fluxBuf[i] - mean;
+      variance += d*d;
+    }
+    const std = Math.sqrt(variance / Math.max(1, state.fluxBuf.length - 1));
+    const threshold = mean + THRESH_K * std;
+
+    // Peak pick: rising over threshold with a small refractory period
+    const isPeak = flux > threshold &&
+                   flux > state.lastFlux &&
+                   (tSec - state.lastOnsetTimeSec) * 1000 >= MIN_ONSET_INTERVAL_MS;
+
+    if (isPeak) {
+      state.lastOnsetTimeSec = tSec;
+      const lane = assignLane(amp);
+      scheduleNoteFromOnset(tSec, lane);
+    }
+
+    state.lastFlux = flux;
+  }
+
+  function assignLane(amp) {
+    // Map spectral centroid to lane (0..4)
+    const N = amp.length;
+    const nyquist = state.audioCtx ? state.audioCtx.sampleRate / 2 : 22050;
+    let num = 0, den = 0;
+    for (let i = 0; i < N; i++) {
+      const f = (i / (N - 1)) * nyquist;
+      const a = amp[i];
+      num += f * a;
+      den += a;
+    }
+    let norm = 0.5;
+    if (den > 1e-9) {
+      const centroid = num / den;
+      norm = Math.min(1, Math.max(0, centroid / nyquist));
+    }
+    let lane = Math.min(4, Math.max(0, Math.floor(norm * 5)));
+    if (lane === state.prevLane) lane = (lane + 1) % 5; // avoid repeated jacks
+    state.prevLane = lane;
+    return lane;
+  }
+
+  function scheduleNoteFromOnset(onsetTimeSec, lane) {
+    const travelDist = Math.max(0, state.hitY - (NOTE_H / 2));
+    const travelTimeMs = (travelDist / SPEED) * 1000;
+    const hitPerfMs = state.startAt + ((onsetTimeSec - state.audioBaseTime) * 1000) + ANALYSIS_DELAY_MS;
+    const spawnRelMs = hitPerfMs - travelTimeMs - state.startAt;
+
+    const def = { t: spawnRelMs, lane };
+    state.schedule.push(def);
+    state.schedule.sort((a, b) => a.t - b.t);
   }
 
   function spawnNote(def) {
@@ -94,6 +240,8 @@
 
   function updateNotes(ts) {
     const elapsed = ts - state.startAt;
+
+    // Spawn due notes
     while (state.nextSpawnIdx < state.schedule.length && elapsed >= state.schedule[state.nextSpawnIdx].t) {
       spawnNote(state.schedule[state.nextSpawnIdx++]);
     }
@@ -177,7 +325,6 @@
         setTimeout(() => note.el && note.el.remove(), 180);
         state.counts[j]++;
         flash(capitalize(j), j);
-        // Effects on successful hits (Okay or better)
         triggerGlow(lane);
         screenShake();
       } else {
@@ -187,11 +334,6 @@
       }
     } else {
       // No notes in this column -> no penalty and no Miss flash
-    }
-
-    const judged = state.counts.perfect + state.counts.good + state.counts.okay + state.counts.miss;
-    if (judged >= state.schedule.length) {
-      endGame();
     }
   }
 
@@ -209,6 +351,7 @@
     if (key === ' ' || e.code === 'Space') {
       e.preventDefault();
       if (!state.running) startGame();
+      else endGame();
       return;
     }
     if (KEY_TO_LANE[key] !== undefined) {
