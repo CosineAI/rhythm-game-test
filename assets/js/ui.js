@@ -5,7 +5,7 @@
     lanes,
     lanesContainer,
     keycapsContainer,
-    keycapNodes,
+    keycapByLane,
     comboEl,
     comboValueEl,
     comboToastEl
@@ -137,7 +137,7 @@
         if (laneEl.classList.contains('black')) laneEl.classList.add('hidden');
         else laneEl.classList.remove('hidden');
       }
-      for (const [k, el] of keycapNodes.entries()) {
+      for (const el of keycapByLane) {
         if (!el) continue;
         if (el.classList.contains('black')) el.classList.add('hidden');
         else el.classList.remove('hidden');
@@ -148,9 +148,19 @@
       for (const laneEl of lanes) {
         laneEl.classList.remove('hidden');
       }
-      for (const [, el] of keycapNodes.entries()) {
+      for (const el of keycapByLane) {
         if (el) el.classList.remove('hidden');
       }
+    }
+  }
+
+  function refreshKeycapLabels() {
+    if (!keycapByLane) return;
+    const binds = (window.RG.Settings && window.RG.Settings.getKeyBindings && window.RG.Settings.getKeyBindings()) || ['z','s','x','d','c'];
+    for (let i = 0; i < keycapByLane.length && i < binds.length; i++) {
+      const el = keycapByLane[i];
+      const span = el ? el.querySelector('span') : null;
+      if (span) span.textContent = String(binds[i]).toUpperCase();
     }
   }
 
@@ -163,6 +173,7 @@
     updateComboUI,
     comboHit,
     comboMiss,
-    applyKeyLayout
+    applyKeyLayout,
+    refreshKeycapLabels
   };
 })();

@@ -57,7 +57,9 @@
 
   function scheduleNoteFromOnset(state, onsetTimeSec, lane) {
     const travelDist = Math.max(0, state.hitY - (NOTE_H / 2));
-    const travelTimeMs = (travelDist / SPEED) * 1000;
+    const speedMult = (window.RG.Settings && window.RG.Settings.getFallSpeedMult) ? window.RG.Settings.getFallSpeedMult() : 1.0;
+    const speed = SPEED * speedMult;
+    const travelTimeMs = (travelDist / speed) * 1000;
     const userOffsetMs = (window.RG.Settings && window.RG.Settings.getInputOffsetMs()) || 0;
     const hitPerfMs = state.startAt + ((onsetTimeSec - state.audioBaseTime) * 1000) + window.RG.Const.ANALYSIS_DELAY_MS + userOffsetMs;
     const spawnRelMs = hitPerfMs - travelTimeMs - state.startAt;

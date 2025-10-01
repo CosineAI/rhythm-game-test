@@ -38,6 +38,25 @@ main {
 .game {
   width: min(900px, 96vw);
 }
+.game.fullscreen {
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0 auto;
+}
+.game.fullscreen .topbar,
+.game.fullscreen .controls,
+.game.fullscreen .instructions {
+  display: none;
+}
+.game.fullscreen .playfield {
+  max-width: 900px;
+  min-height: 0;
+  height: calc(100vh - 96px);
+}
+.game.fullscreen .scoreboard {
+  max-width: 900px;
+  margin: 8px auto 0;
+}
 
 .topbar {
   display: flex;
@@ -156,6 +175,7 @@ main {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   pointer-events: none;
+  z-index: 1;
 }
 /* Three-lane layout for Very Easy difficulty */
 .lanes.three {
@@ -180,6 +200,7 @@ main {
   bottom: calc(var(--keycaps-h) + 12px);
   background: linear-gradient(90deg, transparent, rgba(144, 234, 144, 0.9), transparent);
   box-shadow: 0 0 8px rgba(144,234,144,0.6);
+  z-index: 3;
 }
 
 /* Upward green glow effect on successful hits — expands from center outward */
@@ -234,6 +255,7 @@ main {
     inset 0 -2px 0 rgba(0,0,0,0.15),
     inset 0 2px 0 rgba(255,255,255,0.08);
   transform: translateZ(0);
+  z-index: 2;
 }
 .note.white { background: linear-gradient(180deg, var(--white-note), #5dc3f5); }
 .note.black { background: linear-gradient(180deg, var(--black-note), #a78bfa); }
@@ -485,6 +507,60 @@ main {
   100% { transform: rotate(60deg); opacity: 0.0; }
 }
 
+/* Scoreboard under the playfield */
+.scoreboard {
+  width: 100%;
+  max-width: 600px;
+  margin: 10px auto 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+  border: 1px solid #1b2335;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.scoreboard .score-label {
+  color: #9fb3d9;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.scoreboard .score-value {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #7cf48b, #7bcff6);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 4px 16px rgba(124,244,139,0.15);
+}
+
+/* Beat gridlines (experimental) */
+.gridlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(0);
+  background: linear-gradient(90deg, rgba(200,220,255,0.1), rgba(200,220,255,0.25), rgba(200,220,255,0.1));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+.gridline.strong {
+  height: 2px;
+  background: linear-gradient(90deg, rgba(160,200,255,0.15), rgba(160,200,255,0.35), rgba(160,200,255,0.15));
+}
+
 /* Instructions below the field */
 .instructions {
   color: #9fb3d9;
@@ -538,6 +614,22 @@ footer {
   padding: 12px 16px;
   display: grid;
   gap: 14px;
+}
+.keybinds {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.keybind {
+  appearance: none;
+  border: 1px solid #223152;
+  background: #12192e;
+  color: #d8e6ff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
 }
 .form-row {
   display: grid;

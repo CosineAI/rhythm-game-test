@@ -34,6 +34,7 @@
         <button id="playChartBtn" class="btn primary" disabled>Play chart</button>
 
         <button id="openSettingsBtn" class="btn">Settings</button>
+        <button id="fullscreenBtn" class="btn">Fullscreen</button>
         <small class="hint">Space to start/stop. If no file is selected, the microphone is used.</small>
       </div>
 
@@ -47,6 +48,8 @@
           <div class="lane black" data-key="d"></div>
           <div class="lane white" data-key="c"></div>
         </div>
+
+        <div class="gridlines" id="gridlines"></div>
 
         <div class="hit-line" id="hitLine"></div>
 
@@ -66,6 +69,11 @@
         </div>
 
         <div class="combo-toast" id="comboToast"></div>
+      </div>
+
+      <div class="scoreboard" id="scoreboard">
+        <div class="score-label">Score</div>
+        <div class="score-value" id="scoreValue">0</div>
       </div>
 
       <footer class="instructions">
@@ -103,6 +111,41 @@
           </div>
           <small class="muted">Use this if your hits feel late/early. Positive delays the hit window; negative makes it earlier.</small>
         </div>
+
+        <div class="form-row">
+          <label for="chartPad">Chart padding (ms)</label>
+          <div class="range-row">
+            <input type="range" id="chartPad" min="0" max="10000" step="100">
+            <input type="number" id="chartPadNumber" class="number" min="0" max="10000" step="10">
+          </div>
+          <small class="muted">No notes will be placed in the first/last N ms of the track when generating a chart.</small>
+        </div>
+
+        <div class="form-row">
+          <label>Rebind keys</label>
+          <div class="keybinds">
+            <input type="text" id="keyBind0" class="keybind" maxlength="1" placeholder="Z">
+            <input type="text" id="keyBind1" class="keybind" maxlength="1" placeholder="S">
+            <input type="text" id="keyBind2" class="keybind" maxlength="1" placeholder="X">
+            <input type="text" id="keyBind3" class="keybind" maxlength="1" placeholder="D">
+            <input type="text" id="keyBind4" class="keybind" maxlength="1" placeholder="C">
+          </div>
+          <small class="muted">Choose any five keys (one character each). Leftmost is the left lane.</small>
+        </div>
+
+        <div class="form-row">
+          <label for="fallSpeed">Fall speed (x)</label>
+          <div class="range-row">
+            <input type="range" id="fallSpeed" min="0.5" max="2.0" step="0.05">
+            <input type="number" id="fallSpeedNumber" class="number" min="0.5" max="2.0" step="0.01">
+          </div>
+          <small class="muted">Controls how fast notes fall. 1.00x is the current default.</small>
+        </div>
+
+        <div class="form-row">
+          <label><input type="checkbox" id="showGridlines"> Show beat gridlines (experimental)</label>
+          <small class="muted">Requires a precomputed chart. Tries to estimate BPM and render beat guides.</small>
+        </div>
       </div>
       <footer class="modal-footer">
         <button id="settingsCancel" class="btn">Cancel</button>
@@ -123,6 +166,9 @@
   <script src="assets/js/chart.js"></script>
   <script src="assets/js/notes.js"></script>
   <script src="assets/js/ui.js"></script>
+  <script src="assets/js/grid.js"></script>
+  <script src="assets/js/fullscreen.js"></script>
+  <script src="assets/js/score.js"></script>
   <script src="assets/js/analysis.js"></script>
   <script src="assets/js/game.js"></script>
   <script src="assets/js/input.js"></script>
