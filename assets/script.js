@@ -13,6 +13,38 @@
   const CHART_THRESH_K = 1.2;
   const CHART_MIN_SPACING_MS = 120;
 
+  function getDifficulty() {
+    const v = difficultySelect && difficultySelect.value || 'normal';
+    return (v === 'easy' || v === 'hard') ? v : 'normal';
+  }
+  function getDifficultyParams() {
+    const d = getDifficulty();
+    if (d === 'easy') {
+      return {
+        name: 'Easy',
+        threshK: 1.6,
+        minSpacingMs: 260,
+        smoothRadius: 4,
+        threshWindow: 48
+      };
+    } else if (d === 'hard') {
+      return {
+        name: 'Hard',
+        threshK: 1.0,
+        minSpacingMs: 100,
+        smoothRadius: 2,
+        threshWindow: 36
+      };
+    }
+    return {
+      name: 'Normal',
+      threshK: 1.2,
+      minSpacingMs: 160,
+      smoothRadius: 3,
+      threshWindow: 40
+    };
+  }
+
   const KEY_ORDER = ['z','s','x','d','c'];
   const KEY_TO_LANE = { z: 0, s: 1, x: 2, d: 3, c: 4 };
   const LANE_TYPES = ['white', 'black', 'white', 'black', 'white'];
@@ -33,6 +65,7 @@
   const audioEl = document.getElementById('audioPlayer');
   const analyzeBtn = document.getElementById('analyzeBtn');
   const playChartBtn = document.getElementById('playChartBtn');
+  const difficultySelect = document.getElementById('difficultySelect');
 
   let state = resetState();
 
@@ -238,11 +271,14 @@
       onset[i] = d > 0 ? d : 0;
     }
 
+    // Difficulty parameters
+    const diff = getDifficultyParams();
+
     // Smooth with small moving average
-    smoothInPlace(onset, 3);
+    smoothInPlace(onset, diff.smoothRadius);
 
     // Peak picking with adaptive threshold
-    const peaks = pickPeaks(onset, timesMs, CHART_MIN_SPACING_MS, CHART_THRESH_K, CHART_THRESH_WINDOW);
+    const peaks = pickPeaks(onset, timesMs, diff.minSpacingMs, diff.threshK, diff.threshWindow);
 
     // Assign lanes (simple bounce pattern)
     const notes = [];
@@ -257,12 +293,13 @@
     state.precomputedChart = {
       fileName: file.name,
       durationMs,
+      difficulty: diff.name,
       notes
     };
 
     playChartBtn.disabled = notes.length === 0;
     statusEl.textContent = notes.length
-      ? `Chart ready (${notes.length} notes). Press “Play chart” or Space to start.`
+      ? `Chart ready (${diff.name}, ${notes.length} notes). Press “Play chart” or Space to start.`
       : 'No strong onsets detected. Try another file or adjust thresholds.';
   }
 
@@ -459,7 +496,7 @@
 
     state.running = true;
     state.ended = false;
-    statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.notes.length} notes`;
+    statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.difficulty || 'Normal'} (${chart.notes.length} notes)`;
 
     const onEnded = () => endGame();
     audioEl.addEventListener('ended', onEnded, { once: true });
@@ -738,9 +775,26 @@
       if (playChartBtn) playChartBtn.disabled = true;
 
       if (f) {
-        statusEl.textContent = `Selected: ${f.name}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
+        const diff = getDifficultyParams().name;
+        statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
       } else {
         statusEl.textContent = 'No file selected — Space will start microphone live mode.';
+      }
+    });
+  }
+
+  if (difficultySelect) {
+    difficultySelect.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (f) {
+        const diff = getDifficultyParams().name;
+        // Invalidate existing chart if difficulty changed
+        if (state.precomputedChart && state.precomputedChart.fileName === f.name && state.precomputedChart.difficulty !== diff) {
+          state.precomputedChart = null;
+          if (playChartBtn) playChartBtn.disabled = true;
+        }
+        if (analyzeBtn) analyzeBtn.disabled = !f;
+        statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
       }
     });
   }

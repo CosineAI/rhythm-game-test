@@ -65,6 +65,16 @@ main {
   align-items: center;
   gap: 12px;
   margin: 6px 0 12px;
+  flex-wrap: wrap;
+}
+.inline-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.muted {
+  color: #9fb3d9;
+  font-size: 12px;
 }
 .file-upload {
   position: relative;
@@ -84,6 +94,15 @@ main {
 }
 .file-upload span {
   pointer-events: none;
+  font-size: 13px;
+}
+.select {
+  appearance: none;
+  border: 1px solid #223152;
+  background: #12192e;
+  color: #d8e6ff;
+  padding: 6px 10px;
+  border-radius: 6px;
   font-size: 13px;
 }
 .controls .hint {
