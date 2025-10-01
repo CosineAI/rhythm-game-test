@@ -22,6 +22,8 @@
   const statusEl = document.getElementById('status');
   const lanes = Array.from(document.querySelectorAll('.lane'));
   const keycapNodes = new Map(KEY_ORDER.map(k => [k, document.querySelector(`.keycap[data-key="${k}"]`)]));
+  const fileInput = document.getElementById('audioFile');
+  const audioEl = document.getElementById('audioPlayer');
 
   let state = resetState();
 
@@ -38,12 +40,15 @@
       counts: { perfect: 0, good: 0, okay: 0, miss: 0 },
       raf: 0,
 
-      // Live audio analysis state
+      // Mode and audio graph
+      mode: 'live',       // 'live' | 'file'
       audioCtx: null,
       analyser: null,
       micStream: null,
-      source: null,
-      audioBaseTime: 0,  // AudioContext.currentTime when game starts (aligns with performance.now)
+      source: null,       // MediaStream source (mic)
+      mediaNode: null,    // MediaElementAudioSourceNode (file)
+      fileUrl: null,      // blob URL for uploaded file
+      audioBaseTime: 0,   // AudioContext.currentTime when game starts (aligns with performance.now)
       analysisTimer: 0,
       prevAmp: null,
       fluxBuf: [],
@@ -65,9 +70,28 @@
   }
 
   async function setupLiveAudio() {
-    if (state.audioCtx && state.audioCtx.state === 'suspended') {
+    // Ensure single persistent AudioContext
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (state.audioCtx.state === 'suspended') {
       await state.audioCtx.resume();
-      return;
+    }
+
+    // Build analyser once
+    if (!state.analyser) {
+      state.analyser = state.audioCtx.createAnalyser();
+      state.analyser.fftSize = FFT_SIZE;
+      state.analyser.smoothingTimeConstant = 0.0;
+      state.analyser.minDecibels = -100;
+      state.analyser.maxDecibels = -10;
+      state.scratchFreq = new Float32Array(state.analyser.frequencyBinCount);
+      state.prevAmp = new Float32Array(state.analyser.frequencyBinCount);
+    }
+
+    // Disconnect media node if previously connected
+    if (state.mediaNode) {
+      try { state.mediaNode.disconnect(); } catch {}
     }
 
     statusEl.textContent = 'Requesting microphone…';
@@ -80,22 +104,75 @@
     };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = FFT_SIZE;
-    analyser.smoothingTimeConstant = 0.0;
-    analyser.minDecibels = -100;
-    analyser.maxDecibels = -10;
+    const source = state.audioCtx.createMediaStreamSource(stream);
+    source.connect(state.analyser);
 
-    const source = audioCtx.createMediaStreamSource(stream);
-    source.connect(analyser);
-
-    state.audioCtx = audioCtx;
-    state.analyser = analyser;
     state.source = source;
     state.micStream = stream;
-    state.prevAmp = new Float32Array(analyser.frequencyBinCount);
-    state.scratchFreq = new Float32Array(analyser.frequencyBinCount);
+  }
+
+  async function setupFileAudio(file) {
+    // Ensure single persistent AudioContext
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (state.audioCtx.state === 'suspended') {
+      await state.audioCtx.resume();
+    }
+
+    // Build analyser once
+    if (!state.analyser) {
+      state.analyser = state.audioCtx.createAnalyser();
+      state.analyser.fftSize = FFT_SIZE;
+      state.analyser.smoothingTimeConstant = 0.0;
+      state.analyser.minDecibels = -100;
+      state.analyser.maxDecibels = -10;
+      state.scratchFreq = new Float32Array(state.analyser.frequencyBinCount);
+      state.prevAmp = new Float32Array(state.analyser.frequencyBinCount);
+    }
+
+    // Disconnect mic source if previously connected
+    if (state.source) {
+      try { state.source.disconnect(); } catch {}
+      state.source = null;
+    }
+
+    // Wire up media element to analyser and destination
+    if (!state.mediaNode) {
+      state.mediaNode = state.audioCtx.createMediaElementSource(audioEl);
+    } else {
+      try { state.mediaNode.disconnect(); } catch {}
+    }
+    state.mediaNode.connect(state.analyser);
+    state.mediaNode.connect(state.audioCtx.destination);
+
+    // Load file into <audio>
+    if (state.fileUrl) {
+      try { URL.revokeObjectURL(state.fileUrl); } catch {}
+      state.fileUrl = null;
+    }
+    const url = URL.createObjectURL(file);
+    state.fileUrl = url;
+    audioEl.src = url;
+    audioEl.loop = false;
+    audioEl.currentTime = 0;
+
+    // Wait for metadata so duration and decoding are ready
+    await new Promise((resolve, reject) => {
+      const onReady = () => { cleanup(); resolve(); };
+      const onErr = (e) => { cleanup(); reject(e); };
+      const cleanup = () => {
+        audioEl.removeEventListener('loadedmetadata', onReady);
+        audioEl.removeEventListener('error', onErr);
+      };
+      audioEl.addEventListener('loadedmetadata', onReady, { once: true });
+      audioEl.addEventListener('error', onErr, { once: true });
+      // In case metadata already loaded
+      if (audioEl.readyState >= 1) {
+        cleanup();
+        resolve();
+      }
+    });
   }
 
   async function startGame() {
@@ -105,24 +182,57 @@
     state = Object.assign(resetState(), {});
     measure();
 
-    try {
-      await setupLiveAudio();
-    } catch (err) {
-      console.error('Microphone error:', err);
-      statusEl.textContent = 'Mic blocked/unavailable. Live mode requires microphone access.';
-      return;
+    const file = fileInput && fileInput.files && fileInput.files[0];
+
+    if (file) {
+      state.mode = 'file';
+      try {
+        await setupFileAudio(file);
+      } catch (err) {
+        console.error('Audio file error:', err);
+        statusEl.textContent = 'Could not load audio file.';
+        return;
+      }
+      try {
+        await state.audioCtx.resume();
+        await audioEl.play();
+      } catch (err) {
+        console.error('Playback error:', err);
+        statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+        return;
+      }
+
+      state.startAt = performance.now();
+      state.audioBaseTime = state.audioCtx.currentTime;
+      state.running = true;
+      state.ended = false;
+      statusEl.textContent = `File mode: ${file.name} (delay ${ANALYSIS_DELAY_MS} ms)`;
+
+      const onEnded = () => endGame();
+      audioEl.addEventListener('ended', onEnded, { once: true });
+
+      state.analysisTimer = setInterval(analyzeStep, ANALYSIS_HOP_MS);
+      state.raf = requestAnimationFrame(tick);
+    } else {
+      state.mode = 'live';
+      try {
+        await setupLiveAudio();
+      } catch (err) {
+        console.error('Microphone error:', err);
+        statusEl.textContent = 'Mic blocked/unavailable. Live mode requires microphone access.';
+        return;
+      }
+
+      state.startAt = performance.now();
+      state.audioBaseTime = state.audioCtx.currentTime;
+
+      state.running = true;
+      state.ended = false;
+      statusEl.textContent = `Live mode: listening (delay ${ANALYSIS_DELAY_MS} ms)… clap, snap, or play music nearby`;
+
+      state.analysisTimer = setInterval(analyzeStep, ANALYSIS_HOP_MS);
+      state.raf = requestAnimationFrame(tick);
     }
-
-    // Align game time (performance.now) and audio time (AudioContext.currentTime)
-    state.startAt = performance.now();
-    state.audioBaseTime = state.audioCtx.currentTime;
-
-    state.running = true;
-    state.ended = false;
-    statusEl.textContent = `Live mode: listening (delay ${ANALYSIS_DELAY_MS} ms)… clap, snap, or play music nearby`;
-
-    state.analysisTimer = setInterval(analyzeStep, ANALYSIS_HOP_MS);
-    state.raf = requestAnimationFrame(tick);
   }
 
   function endGame() {
@@ -130,13 +240,28 @@
     state.ended = true;
     cancelAnimationFrame(state.raf);
     clearInterval(state.analysisTimer);
-    if (state.micStream) {
-      state.micStream.getTracks().forEach(t => t.stop());
+
+    if (state.mode === 'file') {
+      try { audioEl.pause(); } catch {}
+      try { audioEl.currentTime = 0; } catch {}
+      if (state.fileUrl) {
+        try { URL.revokeObjectURL(state.fileUrl); } catch {}
+        state.fileUrl = null;
+      }
+      if (state.mediaNode) {
+        try { state.mediaNode.disconnect(); } catch {}
+      }
+      statusEl.textContent = 'Stopped — press Space to start (file mode or mic if no file)';
+    } else {
+      if (state.micStream) {
+        state.micStream.getTracks().forEach(t => t.stop());
+      }
+      statusEl.textContent = 'Stopped — press Space to start live mode again';
     }
+
     if (state.audioCtx) {
       state.audioCtx.suspend().catch(()=>{});
     }
-    statusEl.textContent = 'Stopped — press Space to start live mode again';
   }
 
   function analyzeStep() {
@@ -369,6 +494,15 @@
       if (cap) cap.classList.remove('active');
     }
   });
+
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (f) {
+        statusEl.textContent = `Selected: ${f.name} — press Space to start (or clear to use mic)`;
+      }
+    });
+  }
 
   window.addEventListener('resize', measure);
 })();

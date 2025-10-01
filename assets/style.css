@@ -59,6 +59,39 @@ main {
   font-size: 14px;
 }
 
+/* Controls */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 12px;
+}
+.file-upload {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid #1b2335;
+  color: #cfe2ff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.file-upload input {
+  display: none;
+}
+.file-upload span {
+  pointer-events: none;
+  font-size: 13px;
+}
+.controls .hint {
+  color: #9fb3d9;
+  font-size: 12px;
+}
+#audioPlayer { display: none; }
+
 .playfield {
   position: relative;
   height: min(68vh, 640px);
