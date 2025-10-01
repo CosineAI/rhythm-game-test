@@ -66,6 +66,8 @@
   const analyzeBtn = document.getElementById('analyzeBtn');
   const playChartBtn = document.getElementById('playChartBtn');
   const difficultySelect = document.getElementById('difficultySelect');
+  const comboEl = document.getElementById('combo');
+  const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
 
   let state = resetState();
 
@@ -80,10 +82,13 @@
       schedule: [], // { t: msFromStart, lane }
       notes: [],    // { lane, el, spawnAt, y, judged }
       counts: { perfect: 0, good: 0, okay: 0, miss: 0 },
+      combo: 0,
+      maxCombo: 0,
       raf: 0,
 
       // Mode and audio graph
-      mode: 'live',       // 'live' | 'file'
+      mode: 'live',       // 'live' | 'f_codeilnewe</'
+e'
       audioCtx: null,
       analyser: null,
       micStream: null,
@@ -669,6 +674,7 @@
     state.ended = true;
     cancelAnimationFrame(state.raf);
     clearInterval(state.analysisTimer);
+    comboMiss();
 
     if (state.mode === 'file' || state.mode === 'chart') {
       try { audioEl.pause(); } catch {}
@@ -828,6 +834,7 @@
         n.judged = true;
         flash('Miss', 'miss');
         state.counts.miss++;
+        comboMiss();
         n.el.classList.add('miss');
         setTimeout(() => n.el && n.el.remove(), 260);
       }
@@ -883,6 +890,49 @@
     }, { once: true });
   }
 
+  // Combo system
+  function comboBurst() {
+    if (!playfield) return;
+    const b = document.createElement('div');
+    b.className = 'burst';
+    playfield.appendChild(b);
+    b.addEventListener('animationend', () => b.remove(), { once: true });
+  }
+
+  function updateComboUI({ pop = false, bump = false } = {}) {
+    if (!comboEl || !comboValueEl) return;
+    comboValueEl.textContent = String(state.combo);
+    if (pop && !comboEl.classList.contains('show')) {
+      comboEl.classList.add('show');
+    } else if (bump && comboEl.classList.contains('show')) {
+      comboEl.classList.remove('bump');
+      // restart bump animation
+      void comboEl.offsetWidth;
+      comboEl.classList.add('bump');
+    }
+  }
+
+  function comboHit() {
+    state.combo = (state.combo || 0) + 1;
+    state.maxCombo = Math.max(state.maxCombo || 0, state.combo);
+
+    if (state.combo === 10) {
+      updateComboUI({ pop: true });
+      comboBurst();
+    } else if (state.combo > 10) {
+      updateComboUI({ bump: true });
+      if (state.combo % 10 === 0) comboBurst();
+    }
+  }
+
+  function comboMiss() {
+    if (state.combo >= 10 && comboEl) {
+      comboEl.classList.remove('show');
+      comboEl.classList.remove('bump');
+    }
+    state.combo = 0;
+  }
+
   function hitLane(lane) {
     if (!state.running) return;
     const { note, dist } = pickCandidate(lane);
@@ -897,10 +947,12 @@
         flash(capitalize(j), j);
         triggerGlow(lane);
         screenShake();
+        comboHit();
       } else {
         // There is a note in this column, but timing was outside windows -> Miss
         flash('Miss', 'miss');
         state.counts.miss++;
+        comboMiss();
       }
     } else {
       // No notes in this column -> no penalty and no Miss flash
