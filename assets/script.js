@@ -901,26 +901,39 @@
   function updateComboUI({ pop = false, bump = false } = {}) {
     if (!comboEl || !comboValueEl) return;
     comboValueEl.textContent = String(state.combo);
-    if (pop && !comboEl.classList.contains('show')) {
+
+    // Ensure the combo is visible once threshold is reached
+    if (state.combo >= 10 && !comboEl.classList.contains('show')) {
       comboEl.classList.add('show');
-    } else if (bump && comboEl.classList.contains('show')) {
+    }
+
+    // On first reveal, let the pop animation play cleanly
+    if (pop) {
+      comboEl.classList.remove('bump');
+      void comboEl.offsetWidth;
+    }
+
+    // Bump animation for continued hits
+    if (bump && comboEl.classList.contains('show')) {
       comboEl.classList.remove('bump');
       // restart bump animation
       void comboEl.offsetWidth;
       comboEl.classList.add('bump');
-    }
+   
   }
 
   function comboHit() {
     state.combo = (state.combo || 0) + 1;
     state.maxCombo = Math.max(state.maxCombo || 0, state.combo);
 
-    if (state.combo === 10) {
-      updateComboUI({ pop: true });
-      comboBurst();
-    } else if (state.combo > 10) {
-      updateComboUI({ bump: true });
-      if (state.combo % 10 === 0) comboBurst();
+    if (state.combo >= 10) {
+      const firstShow = !comboEl || !comboEl.classList || !comboEl.classList.contains('show');
+      updateComboUI({ pop: firstShow, bump: !firstShow || state.combo > 10 });
+      // Burst on first reach and every multiple of 10
+      if (state.combo === 10 || state.combo % 10 === 0) comboBurst();
+    } else {
+      // Pre-10: keep value in sync (not visible yet)
+      updateComboUI();
     }
   }
 
