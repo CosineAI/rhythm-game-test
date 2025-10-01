@@ -7,16 +7,15 @@
     okay: 50
   };
 
-  // Small per-hit bonus that rewards maintaining combo.
-  // Tiers align with visual combo effects.
-  function comboBonus(combo) {
-    if (combo >= 200) return 50;
-    if (combo >= 150) return 40;
-    if (combo >= 100) return 30;
-    if (combo >= 50) return 20;
-    if (combo >= 20) return 10;
-    if (combo >= 10) return 5;
-    return 0;
+  // Combo multiplier: +1% per combo, capped to keep numbers reasonable.
+  // Examples:
+  //   10 combo  -> 1.10x
+  //   50 combo  -> 1.50x
+  //   100 combo -> 2.00x
+  //   200 combo -> 3.00x (cap)
+  function comboMultiplier(combo) {
+    const m = 1 + 0.01 * (combo || 0);
+    return Math.min(m, 3.0);
   }
 
   function updateUI(state) {
@@ -27,8 +26,8 @@
 
   function add(state, judgement) {
     const base = BASE_POINTS[judgement] || 0;
-    const bonus = comboBonus(state.combo || 0);
-    state.score = (state.score || 0) + base + bonus;
+    const mult = comboMultiplier(state.combo || 0);
+    state.score = (state.score || 0) + Math.round(base * mult);
     updateUI(state);
   }
 
@@ -41,6 +40,6 @@
     add,
     reset,
     updateUI,
-    comboBonus
+    comboMultiplier
   };
 })();
