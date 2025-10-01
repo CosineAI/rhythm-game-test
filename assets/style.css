@@ -101,9 +101,9 @@ main {
 /* Upward green glow effect on successful hits — expands from center outward */
 .lane .glow {
   position: absolute;
-  left: 50%;
-  right: auto;
-  width: 80%;
+  left: 0;
+  right: 0;
+  width: 100%;
   bottom: calc(var(--keycaps-h) + 12px - 4px);
   height: 160px;
   background: linear-gradient(180deg,
@@ -122,10 +122,10 @@ main {
 }
 
 @keyframes glowUp {
-  0%   { transform: translateX(-50%) scaleX(0.15) translateY(0); opacity: 0.95; }
-  40%  { transform: translateX(-50%) scaleX(0.7) translateY(-400px); opacity: 0.9; }
-  70%  { transform: translateX(-50%) scaleX(1.0) translateY(-900px); opacity: 0.8; }
-  100% { transform: translateX(-50%) scaleX(1.05) translateY(-1200px); opacity: 0; }
+  0%   { transform: scaleX(0.05) translateY(0); opacity: 0.95; }
+  35%  { transform: scaleX(0.6) translateY(-350px); opacity: 0.9; }
+  65%  { transform: scaleX(1.0) translateY(-900px); opacity: 0.8; }
+  100% { transform: scaleX(1.0) translateY(-1200px); opacity: 0; }
 }
 
 /* Subtle screen shake on hit */
