@@ -164,6 +164,12 @@
     }
   }
 
+  function applyPerspective(enabled) {
+    if (!playfield) return;
+    if (enabled) playfield.classList.add('perspective');
+    else playfield.classList.remove('perspective');
+  }
+
   window.RG.UI = {
     flash,
     triggerGlow,
@@ -174,6 +180,7 @@
     comboHit,
     comboMiss,
     applyKeyLayout,
-    refreshKeycapLabels
+    refreshKeycapLabels,
+    applyPerspective
   };
 })();
