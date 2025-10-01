@@ -108,6 +108,15 @@
           </div>
           <small class="muted">Use this if your hits feel late/early. Positive delays the hit window; negative makes it earlier.</small>
         </div>
+
+        <div class="form-row">
+          <label for="chartPad">Chart padding (ms)</label>
+          <div class="range-row">
+            <input type="range" id="chartPad" min="0" max="10000" step="100">
+            <input type="number" id="chartPadNumber" class="number" min="0" max="10000" step="10">
+          </div>
+          <small class="muted">No notes will be placed in the first/last N ms of the track when generating a chart.</small>
+        </div>
       </div>
       <footer class="modal-footer">
         <button id="settingsCancel" class="btn">Cancel</button>

@@ -62,8 +62,8 @@
     // Peak picking with adaptive threshold
     const peaks = pickPeaks(onset, timesMs, diff.minSpacingMs, diff.threshK, diff.threshWindow);
 
-    // Exclude notes in the first/last 3 seconds
-    const PAD_MS = 3000;
+    // Exclude notes near start/end based on settings
+    const PAD_MS = (window.RG.Settings && window.RG.Settings.getChartPadMs) ? window.RG.Settings.getChartPadMs() : 3000;
     const list = peaks.filter(t => t >= PAD_MS && t <= (durationMs - PAD_MS));
 
     // Assign lanes using multi-band energy mapping near each peak (fallback to bounce)

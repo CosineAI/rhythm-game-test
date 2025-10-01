@@ -30,6 +30,8 @@
   const settingsDifficulty = $('#settingsDifficulty');
   const inputLagRange = $('#inputLag');
   const inputLagNumber = $('#inputLagNumber');
+  const chartPadRange = $('#chartPad');
+  const chartPadNumber = $('#chartPadNumber');
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
 
@@ -56,6 +58,8 @@
     settingsDifficulty,
     inputLagRange,
     inputLagNumber,
+    chartPadRange,
+    chartPadNumber,
     settingsSave,
     settingsCancel
   };
