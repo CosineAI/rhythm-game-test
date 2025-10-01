@@ -21,6 +21,15 @@
   const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
   const comboToastEl = $('#comboToast');
 
+  // Settings modal elements
+  const openSettingsBtn = $('#openSettingsBtn');
+  const settingsModal = $('#settingsModal');
+  const settingsDifficulty = $('#settingsDifficulty');
+  const inputLagRange = $('#inputLag');
+  const inputLagNumber = $('#inputLagNumber');
+  const settingsSave = $('#settingsSave');
+  const settingsCancel = $('#settingsCancel');
+
   window.RG.Dom = {
     playfield,
     judgementEl,
@@ -36,6 +45,13 @@
     difficultySelect,
     comboEl,
     comboValueEl,
-    comboToastEl
+    comboToastEl,
+    openSettingsBtn,
+    settingsModal,
+    settingsDifficulty,
+    inputLagRange,
+    inputLagNumber,
+    settingsSave,
+    settingsCancel
   };
 })();
