@@ -68,6 +68,7 @@
   const difficultySelect = document.getElementById('difficultySelect');
   const comboEl = document.getElementById('combo');
   const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
+  const comboToastEl = document.getElementById('comboToast');
 
   let state = resetState();
 
@@ -898,6 +899,19 @@
     b.addEventListener('animationend', () => b.remove(), { once: true });
   }
 
+  function flashComboCount() {
+    if (!comboToastEl) return;
+    const text = `${state.combo} combo!`;
+    comboToastEl.textContent = text;
+    comboToastEl.classList.remove('show');
+    void comboToastEl.offsetWidth;
+    comboToastEl.classList.add('show');
+    clearTimeout(comboToastEl._t);
+    comboToastEl._t = setTimeout(() => {
+      comboToastEl.classList.remove('show');
+    }, 560);
+  }
+
   function updateComboUI({ pop = false, bump = false } = {}) {
     if (!comboEl || !comboValueEl) return;
     comboValueEl.textContent = String(state.combo);
@@ -929,6 +943,8 @@
     if (state.combo >= 10) {
       const firstShow = !comboEl || !comboEl.classList || !comboEl.classList.contains('show');
       updateComboUI({ pop: firstShow, bump: !firstShow || state.combo > 10 });
+      // Per-hit combo toast
+      flashComboCount();
       // Burst on first reach and every multiple of 10
       if (state.combo === 10 || state.combo % 10 === 0) comboBurst();
     } else {
@@ -941,6 +957,10 @@
     if (state.combo >= 10 && comboEl) {
       comboEl.classList.remove('show');
       comboEl.classList.remove('bump');
+    }
+    if (comboToastEl) {
+      comboToastEl.classList.remove('show');
+      clearTimeout(comboToastEl._t);
     }
     state.combo = 0;
   }

@@ -367,6 +367,34 @@ main {
   animation: comboBump 220ms ease-out;
 }
 
+/* Per-hit combo toast (e.g., \"12 combo!\") */
+.combo-toast {
+  position: absolute;
+  left: 50%;
+  top: 9%;
+  transform: translateX(-50%) translateY(-8px) scale(0.92);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #ffe69a;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.35));
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  will-change: transform, opacity, filter;
+}
+.combo-toast.show {
+  animation: comboToastPop 560ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+@keyframes comboToastPop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.8); filter: blur(2px); }
+  20%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); filter: blur(0); }
+  70%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.98); }
+}
+
 /* Combo burst for milestones */
 .burst {
   position: absolute;
