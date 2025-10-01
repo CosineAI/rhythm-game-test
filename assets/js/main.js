@@ -1,4 +1,9 @@
 (() => {
+  // Initialize settings (load persisted difficulty/input offset and wire modal)
+  if (window.RG.Settings && window.RG.Settings.init) {
+    window.RG.Settings.init();
+  }
+
   // Initialize state
   window.RG.State.state = window.RG.State.resetState();
 

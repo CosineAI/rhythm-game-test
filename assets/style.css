@@ -380,7 +380,7 @@ main {
   animation: comboBump 220ms ease-out;
 }
 
-/* Per-hit combo toast (e.g., \"12 combo!\") */
+/* Per-hit combo toast (e.g., "12 combo!") */
 .combo-toast {
   position: absolute;
   left: 50%;
@@ -498,4 +498,71 @@ footer {
   text-align: center;
   font-size: 12px;
   margin-top: 18px;
+}
+
+/* Modal */
+.modal.hidden { display: none; }
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 10, 22, 0.6);
+  backdrop-filter: blur(1px);
+}
+.modal-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -54%);
+  width: min(520px, 92vw);
+  background: #0f1426;
+  border: 1px solid #1b2335;
+  border-radius: 10px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 0 60px rgba(90, 120, 200, 0.08);
+}
+.modal-header {
+  padding: 14px 16px 8px;
+  border-bottom: 1px solid #1b2335;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  color: #eaf2ff;
+}
+.modal-body {
+  padding: 12px 16px;
+  display: grid;
+  gap: 14px;
+}
+.form-row {
+  display: grid;
+  gap: 8px;
+}
+.range-row {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  gap: 10px;
+  align-items: center;
+}
+.number {
+  appearance: none;
+  border: 1px solid #223152;
+  background: #12192e;
+  color: #d8e6ff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+}
+.modal-footer {
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid #1b2335;
 }

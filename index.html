@@ -32,6 +32,8 @@
 
         <button id="analyzeBtn" class="btn" disabled>Analyze (precompute chart)</button>
         <button id="playChartBtn" class="btn primary" disabled>Play chart</button>
+
+        <button id="openSettingsBtn" class="btn">Settings</button>
         <small class="hint">Space to start/stop. If no file is selected, the microphone is used.</small>
       </div>
 
@@ -74,10 +76,46 @@
   <footer>
     <p>&copy; 2025 Your Name</p>
   </footer>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel" role="document">
+      <header class="modal-header">
+        <h2 id="settingsTitle">Settings</h2>
+      </header>
+      <div class="modal-body">
+        <div class="form-row">
+          <label for="settingsDifficulty">Difficulty</label>
+          <select id="settingsDifficulty" class="select">
+            <option value="veryeasy">Very Easy</option>
+            <option value="easy">Easy</option>
+            <option value="normal">Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="inputLag">Input offset (ms)</label>
+          <div class="range-row">
+            <input type="range" id="inputLag" min="-300" max="300" step="5">
+            <input type="number" id="inputLagNumber" class="number" min="-300" max="300" step="1">
+          </div>
+          <small class="muted">Use this if your hits feel late/early. Positive delays the hit window; negative makes it earlier.</small>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="settingsCancel" class="btn">Cancel</button>
+        <button id="settingsSave" class="btn primary">Save</button>
+      </footer>
+    </div>
+  </div>
+
   <script src="assets/js/rg.js"></script>
   <script src="assets/js/constants.js"></script>
   <script src="assets/js/difficulty.js"></script>
   <script src="assets/js/dom.js"></script>
+  <script src="assets/js/settings.js"></script>
   <script src="assets/js/state.js"></script>
   <script src="assets/js/freq.js"></script>
   <script src="assets/js/algo.js"></script>
@@ -89,5 +127,3 @@
   <script src="assets/js/game.js"></script>
   <script src="assets/js/input.js"></script>
   <script src="assets/js/main.js"></script>
-</body>
-</html>

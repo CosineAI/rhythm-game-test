@@ -22,9 +22,10 @@
 
     const travelDist = Math.max(0, state.hitY - (window.RG.Const.NOTE_H / 2));
     const travelTimeMs = (travelDist / window.RG.Const.SPEED) * 1000;
+    const userOffsetMs = (window.RG.Settings && window.RG.Settings.getInputOffsetMs()) || 0;
 
     state.schedule = chart.notes.map(n => ({
-      t: Math.max(0, n.timeMs - travelTimeMs),
+      t: Math.max(0, (n.timeMs + userOffsetMs) - travelTimeMs),
       lane: n.lane
     }));
     state.schedule.sort((a, b) => a.t - b.t);
