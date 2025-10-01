@@ -895,6 +895,20 @@
     if (!playfield) return;
     const b = document.createElement('div');
     b.className = 'burst';
+
+    // Scale glow size and (slightly) duration by combo tiers
+    let mid = 6.0, end = 9.0, dur = '680ms';
+    if (state.combo >= 200) { mid = 16.0; end = 24.0; dur = '800ms'; }
+    else if (state.combo >= 150) { mid = 13.0; end = 19.0; dur = '780ms'; }
+    else if (state.combo >= 100) { mid = 11.0; end = 16.0; dur = '760ms'; }
+    else if (state.combo >= 50) { mid = 9.0; end = 13.0; dur = '720ms'; }
+    else if (state.combo >= 20) { mid = 7.5; end = 11.0; dur = '700ms'; }
+
+    b.style.setProperty('--burst-start', '0.4');
+    b.style.setProperty('--burst-mid', String(mid));
+    b.style.setProperty('--burst-end', String(end));
+    b.style.setProperty('--burst-duration', dur);
+
     playfield.appendChild(b);
     b.addEventListener('animationend', () => b.remove(), { once: true });
   }
