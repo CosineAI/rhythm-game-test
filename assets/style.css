@@ -92,6 +92,30 @@ main {
 }
 #audioPlayer { display: none; }
 
+/* Buttons */
+.btn {
+  appearance: none;
+  border: 1px solid #223152;
+  background: #172036;
+  color: #d8e6ff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: filter 120ms ease, transform 80ms ease, background 120ms ease;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+  background: linear-gradient(180deg, #27416e, #1a2a4a);
+  border-color: #2a4372;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
+
 .playfield {
   position: relative;
   height: min(68vh, 640px);

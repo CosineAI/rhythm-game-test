@@ -6,6 +6,13 @@
   const THRESH_WINDOW = 30;       // flux history window size (samples)
   const THRESH_K = 1.5;           // threshold multiplier
 
+  // Offline precompute (chart) settings
+  const CHART_FRAME_SIZE = 1024;
+  const CHART_HOP_SIZE = 512;
+  const CHART_THRESH_WINDOW = 40;   // frames
+  const CHART_THRESH_K = 1.2;
+  const CHART_MIN_SPACING_MS = 120;
+
   const KEY_ORDER = ['z','s','x','d','c'];
   const KEY_TO_LANE = { z: 0, s: 1, x: 2, d: 3, c: 4 };
   const LANE_TYPES = ['white', 'black', 'white', 'black', 'white'];
@@ -24,6 +31,8 @@
   const keycapNodes = new Map(KEY_ORDER.map(k => [k, document.querySelector(`.keycap[data-key="${k}"]`)]));
   const fileInput = document.getElementById('audioFile');
   const audioEl = document.getElementById('audioPlayer');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const playChartBtn = document.getElementById('playChartBtn');
 
   let state = resetState();
 
@@ -55,7 +64,11 @@
       lastFlux: 0,
       lastOnsetTimeSec: -1e9,
       prevLane: -1,
-      scratchFreq: null
+      scratchFreq: null,
+
+      // Precomputed chart state
+      precomputedChart: null, // { fileName, durationMs, notes: [{ timeMs, lane }] }
+      preferChartOnStart: false
     };
   }
 
@@ -120,7 +133,7 @@
       await state.audioCtx.resume();
     }
 
-    // Build analyser once
+    // Build analyser once (even if not used during precomputed playback, harmless)
     if (!state.analyser) {
       state.analyser = state.audioCtx.createAnalyser();
       state.analyser.fftSize = FFT_SIZE;
@@ -175,14 +188,183 @@
     });
   }
 
+  async function precomputeChartFromFile(file) {
+    // Ensure an AudioContext for decoding
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (state.audioCtx.state === 'suspended') {
+      await state.audioCtx.resume();
+    }
+
+    statusEl.textContent = 'Analyzing file (precomputing chart)…';
+
+    const arrayBuf = await file.arrayBuffer();
+
+    // Safari compatibility for decodeAudioData
+    const decode = (audioCtx, ab) => new Promise((resolve, reject) => {
+      // If promise-based is available
+      const ret = audioCtx.decodeAudioData(ab, resolve, reject);
+      if (ret && typeof ret.then === 'function') {
+        ret.then(resolve).catch(reject);
+      }
+    });
+
+    const audioBuf = await decode(state.audioCtx, arrayBuf);
+    const sr = audioBuf.sampleRate;
+    const durationMs = audioBuf.duration * 1000;
+
+    // Mixdown to mono
+    const ch0 = audioBuf.getChannelData(0);
+    let mono;
+    if (audioBuf.numberOfChannels > 1) {
+      const ch1 = audioBuf.getChannelData(1);
+      mono = new Float32Array(audioBuf.length);
+      for (let i = 0; i < audioBuf.length; i++) {
+        mono[i] = 0.5 * (ch0[i] + ch1[i]);
+      }
+    } else {
+      mono = ch0;
+    }
+
+    // Compute RMS envelope
+    const { timesMs, rms } = computeRmsEnvelope(mono, sr, CHART_FRAME_SIZE, CHART_HOP_SIZE);
+
+    // Onset strength via positive difference
+    const onset = new Float32Array(rms.length);
+    onset[0] = 0;
+    for (let i = 1; i < rms.length; i++) {
+      const d = rms[i] - rms[i-1];
+      onset[i] = d > 0 ? d : 0;
+    }
+
+    // Smooth with small moving average
+    smoothInPlace(onset, 3);
+
+    // Peak picking with adaptive threshold
+    const peaks = pickPeaks(onset, timesMs, CHART_MIN_SPACING_MS, CHART_THRESH_K, CHART_THRESH_WINDOW);
+
+    // Assign lanes (simple bounce pattern)
+    const notes = [];
+    let lane = 0, dir = 1;
+    for (let i = 0; i < peaks.length; i++) {
+      notes.push({ timeMs: peaks[i], lane });
+      lane += dir;
+      if (lane >= 4) { lane = 4; dir = -1; }
+      if (lane <= 0) { lane = 0; dir = 1; }
+    }
+
+    state.precomputedChart = {
+      fileName: file.name,
+      durationMs,
+      notes
+    };
+
+    playChartBtn.disabled = notes.length === 0;
+    statusEl.textContent = notes.length
+      ? `Chart ready (${notes.length} notes). Press “Play chart” or Space to start.`
+      : 'No strong onsets detected. Try another file or adjust thresholds.';
+  }
+
+  function computeRmsEnvelope(samples, sampleRate, frameSize, hopSize) {
+    const frameCount = Math.floor((samples.length - frameSize) / hopSize) + 1;
+    const rms = new Float32Array(Math.max(0, frameCount));
+    const timesMs = new Float32Array(rms.length);
+
+    let sumsq = 0;
+    // First frame
+    for (let i = 0; i < frameSize; i++) {
+      const s = samples[i];
+      sumsq += s * s;
+    }
+    rms[0] = Math.sqrt(sumsq / frameSize);
+    timesMs[0] = (frameSize / 2) / sampleRate * 1000;
+
+    let idx = 1;
+    for (let start = hopSize; start + frameSize <= samples.length; start += hopSize) {
+      // slide window: remove old, add new
+      for (let i = 0; i < hopSize; i++) {
+        const remove = samples[start - hopSize + i];
+        const add = samples[start + frameSize - hopSize + i];
+        sumsq += add * add - remove * remove;
+      }
+      rms[idx] = Math.sqrt(Math.max(0, sumsq) / frameSize);
+      const center = start + frameSize / 2;
+      timesMs[idx] = center / sampleRate * 1000;
+      idx++;
+    }
+    return { timesMs, rms };
+  }
+
+  function smoothInPlace(arr, windowRadius) {
+    if (!arr || arr.length === 0) return;
+    const N = arr.length;
+    const out = new Float32Array(N);
+    const r = Math.max(0, windowRadius | 0);
+    for (let i = 0; i < N; i++) {
+      const left = Math.max(0, i - r);
+      const right = Math.min(N - 1, i + r);
+      let sum = 0;
+      for (let j = left; j <= right; j++) sum += arr[j];
+      out[i] = sum / (right - left + 1);
+    }
+    for (let i = 0; i < N; i++) arr[i] = out[i];
+  }
+
+  function pickPeaks(envelope, timesMs, minSpacingMs, k, window) {
+    const peaks = [];
+    const N = envelope.length;
+    let lastPeakTime = -1e9;
+
+    for (let i = 1; i < N - 1; i++) {
+      // compute adaptive threshold from a trailing window
+      const start = Math.max(0, i - window);
+      const end = i; // inclusive of i-1
+      let mean = 0;
+      let count = 0;
+      for (let j = start; j < end; j++) { mean += envelope[j]; count++; }
+      if (count === 0) continue;
+      mean /= count;
+      let varsum = 0;
+      for (let j = start; j < end; j++) {
+        const d = envelope[j] - mean;
+        varsum += d*d;
+      }
+      const std = Math.sqrt(varsum / Math.max(1, count - 1));
+      const threshold = mean + k * std;
+
+      const isLocalMax = envelope[i] >= envelope[i-1] && envelope[i] > envelope[i+1];
+      if (isLocalMax && envelope[i] > threshold) {
+        const t = timesMs[i];
+        if (t - lastPeakTime >= minSpacingMs) {
+          peaks.push(t);
+          lastPeakTime = t;
+        }
+      }
+    }
+
+    return peaks;
+  }
+
   async function startGame() {
     if (state.running) return;
 
+    // Preserve any precomputed chart across reset
+    const prevChart = state.precomputedChart;
+
     clearNotes();
     state = Object.assign(resetState(), {});
+    state.precomputedChart = prevChart;
     measure();
 
     const file = fileInput && fileInput.files && fileInput.files[0];
+    const hasChart = !!(file && state.precomputedChart && state.precomputedChart.fileName === file.name);
+
+    if (hasChart && (state.preferChartOnStart || true)) {
+      state.preferChartOnStart = false;
+      await startChartPlayback(file);
+      return;
+    }
 
     if (file) {
       state.mode = 'file';
@@ -206,7 +388,7 @@
       state.audioBaseTime = state.audioCtx.currentTime;
       state.running = true;
       state.ended = false;
-      statusEl.textContent = `File mode: ${file.name} (delay ${ANALYSIS_DELAY_MS} ms)`;
+      statusEl.textContent = `File mode (live analysis): ${file.name} (delay ${ANALYSIS_DELAY_MS} ms)`;
 
       const onEnded = () => endGame();
       audioEl.addEventListener('ended', onEnded, { once: true });
@@ -235,13 +417,63 @@
     }
   }
 
+  async function startChartPlayback(file) {
+    state.mode = 'chart';
+
+    try {
+      await setupFileAudio(file);
+    } catch (err) {
+      console.error('Audio file error:', err);
+      statusEl.textContent = 'Could not load audio file.';
+      return;
+    }
+
+    // Build schedule from precomputed chart
+    const chart = state.precomputedChart;
+    if (!chart || !chart.notes || !chart.notes.length) {
+      statusEl.textContent = 'No chart available. Analyze first.';
+      return;
+    }
+
+    const travelDist = Math.max(0, state.hitY - (NOTE_H / 2));
+    const travelTimeMs = (travelDist / SPEED) * 1000;
+
+    state.schedule = chart.notes.map(n => ({
+      t: Math.max(0, n.timeMs - travelTimeMs),
+      lane: n.lane
+    }));
+    state.schedule.sort((a, b) => a.t - b.t);
+    state.nextSpawnIdx = 0;
+
+    try {
+      await state.audioCtx.resume();
+      await audioEl.play();
+    } catch (err) {
+      console.error('Playback error:', err);
+      statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+      return;
+    }
+
+    state.startAt = performance.now();
+    state.audioBaseTime = state.audioCtx.currentTime;
+
+    state.running = true;
+    state.ended = false;
+    statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.notes.length} notes`;
+
+    const onEnded = () => endGame();
+    audioEl.addEventListener('ended', onEnded, { once: true });
+
+    state.raf = requestAnimationFrame(tick);
+  }
+
   function endGame() {
     state.running = false;
     state.ended = true;
     cancelAnimationFrame(state.raf);
     clearInterval(state.analysisTimer);
 
-    if (state.mode === 'file') {
+    if (state.mode === 'file' || state.mode === 'chart') {
       try { audioEl.pause(); } catch {}
       try { audioEl.currentTime = 0; } catch {}
       if (state.fileUrl) {
@@ -251,7 +483,7 @@
       if (state.mediaNode) {
         try { state.mediaNode.disconnect(); } catch {}
       }
-      statusEl.textContent = 'Stopped — press Space to start (file mode or mic if no file)';
+      statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
     } else {
       if (state.micStream) {
         state.micStream.getTracks().forEach(t => t.stop());
@@ -498,9 +730,54 @@
   if (fileInput) {
     fileInput.addEventListener('change', () => {
       const f = fileInput.files && fileInput.files[0];
-      if (f) {
-        statusEl.textContent = `Selected: ${f.name} — press Space to start (or clear to use mic)`;
+      // Reset any previous chart when selecting a new file
+      if (state.precomputedChart) {
+        state.precomputedChart = null;
       }
+      if (analyzeBtn) analyzeBtn.disabled = !f;
+      if (playChartBtn) playChartBtn.disabled = true;
+
+      if (f) {
+        statusEl.textContent = `Selected: ${f.name}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
+      } else {
+        statusEl.textContent = 'No file selected — Space will start microphone live mode.';
+      }
+    });
+  }
+
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener('click', async () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) {
+        statusEl.textContent = 'Choose a file first.';
+        return;
+      }
+      analyzeBtn.disabled = true;
+      try {
+        await precomputeChartFromFile(f);
+        playChartBtn.disabled = !(state.precomputedChart && state.precomputedChart.notes.length);
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = 'Analysis failed.';
+      } finally {
+        analyzeBtn.disabled = false;
+      }
+    });
+  }
+
+  if (playChartBtn) {
+    playChartBtn.addEventListener('click', async () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f || !state.precomputedChart) {
+        statusEl.textContent = 'Analyze a file first.';
+        return;
+      }
+      if (state.running) {
+        endGame();
+        return;
+      }
+      state.preferChartOnStart = true;
+      await startGame();
     });
   }
 
