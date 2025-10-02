@@ -18,6 +18,11 @@
   const playChartBtn = $('#playChartBtn');
   const difficultySelect = $('#difficultySelect');
 
+  // YouTube controls
+  const youtubeUrlInput = $('#youtubeUrl');
+  const youtubeLoadBtn = $('#youtubeLoadBtn');
+  const youtubePlayerContainer = $('#youtubePlayer');
+
   const gridlinesContainer = $('#gridlines');
 
   const comboEl = $('#combo');
@@ -61,6 +66,10 @@
     analyzeBtn,
     playChartBtn,
     difficultySelect,
+    // YouTube
+    youtubeUrlInput,
+    youtubeLoadBtn,
+    youtubePlayerContainer,
     gridlinesContainer,
     comboEl,
     comboValueEl,

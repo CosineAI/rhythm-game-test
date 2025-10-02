@@ -23,11 +23,11 @@
       raf: 0,
 
       // Mode and audio graph
-      mode: 'live',       // 'live' | 'file' | 'chart'
+      mode: 'live',       // 'live' | 'file' | 'chart' | 'youtube'
       audioCtx: null,
       analyser: null,
       micStream: null,
-      source: null,       // MediaStream source (mic)
+      source: null,       // MediaStream source (mic/display capture)
       mediaNode: null,    // MediaElementAudioSourceNode (file)
       fileUrl: null,      // blob URL for uploaded file
       audioBaseTime: 0,   // AudioContext.currentTime when game starts (aligns with performance.now)
@@ -38,6 +38,12 @@
       lastOnsetTimeSec: -1e9,
       prevLane: -1,
       scratchFreq: null,
+      captureStream: null, // getDisplayMedia stream (YouTube/tab capture)
+
+      // YouTube state
+      ytPlayer: null,
+      ytVideoId: null,
+      youtubeReady: false,
 
       // Precomputed chart state
       precomputedChart: null, // { fileName, durationMs, notes: [{ timeMs, lane }] }

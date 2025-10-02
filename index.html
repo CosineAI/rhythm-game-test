@@ -30,13 +30,20 @@
           </select>
         </div>
 
+        <div class="inline-group yt-controls">
+          <input type="text" id="youtubeUrl" class="text" placeholder="YouTube link (https://…)" inputmode="url">
+          <button id="youtubeLoadBtn" class="btn">Load YouTube</button>
+        </div>
+
         <button id="analyzeBtn" class="btn" disabled>Analyze (precompute chart)</button>
         <button id="playChartBtn" class="btn primary" disabled>Play chart</button>
 
         <button id="openSettingsBtn" class="btn">Settings</button>
         <button id="fullscreenBtn" class="btn">Fullscreen</button>
-        <small class="hint">Space to start/stop. If no file is selected, the microphone is used.</small>
+        <small class="hint">Space to start/stop. If no file is selected, the microphone is used. To stream from YouTube, load a link and then start — the browser will ask to share this tab’s audio.</small>
       </div>
+
+      <div id="youtubePlayer" class="yt-player"></div>
 
       <audio id="audioPlayer" preload="auto"></audio>
 
@@ -163,6 +170,7 @@
   <script src="assets/js/freq.js"></script>
   <script src="assets/js/algo.js"></script>
   <script src="assets/js/audio.js"></script>
+  <script src="assets/js/youtube.js"></script>
   <script src="assets/js/chart.js"></script>
   <script src="assets/js/notes.js"></script>
   <script src="assets/js/ui.js"></script>

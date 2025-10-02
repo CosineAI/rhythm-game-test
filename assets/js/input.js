@@ -5,7 +5,9 @@
     fileInput,
     analyzeBtn,
     playChartBtn,
-    statusEl
+    statusEl,
+    youtubeUrlInput,
+    youtubeLoadBtn
   } = window.RG.Dom;
 
   function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -146,6 +148,37 @@
         state.preferChartOnStart = true;
         await window.RG.Game.startGame(state);
       });
+    }
+
+    if (youtubeLoadBtn) {
+      youtubeLoadBtn.addEventListener('click', async () => {
+        const url = youtubeUrlInput ? (youtubeUrlInput.value || '').trim() : '';
+        if (!url) {
+          statusEl.textContent = 'Paste a YouTube link first.';
+          return;
+        }
+        try {
+          await window.RG.YouTube.load(url);
+          const title = (window.RG.YouTube.getTitle && window.RG.YouTube.getTitle()) || '';
+          if (title) {
+            statusEl.textContent = `YouTube loaded: “${title}”. Press Space to start and share this tab’s audio.`;
+          } else {
+            statusEl.textContent = 'YouTube loaded. Press Space to start and share this tab’s audio.';
+          }
+        } catch (e) {
+          console.error(e);
+          statusEl.textContent = 'Failed to load YouTube link.';
+        }
+      });
+
+      if (youtubeUrlInput) {
+        youtubeUrlInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            youtubeLoadBtn.click();
+          }
+        });
+      }
     }
   }
 

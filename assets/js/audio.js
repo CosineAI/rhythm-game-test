@@ -108,5 +108,59 @@
     });
   }
 
-  window.RG.Audio = { setupLiveAudio, setupFileAudio };
+  async function setupYouTubeAudio(state) {
+    // Ensure single persistent AudioContext
+    if (!state.audioCtx) {
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (state.audioCtx.state === 'suspended') {
+      await state.audioCtx.resume();
+    }
+
+    // Build analyser once
+    if (!state.analyser) {
+      state.analyser = state.audioCtx.createAnalyser();
+      state.analyser.fftSize = FFT_SIZE;
+      state.analyser.smoothingTimeConstant = 0.0;
+      state.analyser.minDecibels = -100;
+      state.analyser.maxDecibels = -10;
+      state.scratchFreq = new Float32Array(state.analyser.frequencyBinCount);
+      state.prevAmp = new Float32Array(state.analyser.frequencyBinCount);
+    }
+
+    // Disconnect previous sources (mic/file)
+    if (state.source) {
+      try { state.source.disconnect(); } catch {}
+      state.source = null;
+    }
+    if (state.mediaNode) {
+      try { state.mediaNode.disconnect(); } catch {}
+    }
+    // Stop any previous capture
+    if (state.captureStream) {
+      try { state.captureStream.getTracks().forEach(t => t.stop()); } catch {}
+      state.captureStream = null;
+    }
+
+    // Ask user to share THIS TAB with audio; user must choose "This tab" and enable "Share tab audio"
+    if (statusEl) statusEl.textContent = 'Choose “This Tab” and enable “Share tab audio” in the prompt…';
+    const constraints = {
+      video: true,
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    };
+    const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
+
+    // Hook captured tab audio into analyser
+    const source = state.audioCtx.createMediaStreamSource(stream);
+    source.connect(state.analyser);
+
+    state.source = source;
+    state.captureStream = stream;
+  }
+
+  window.RG.Audio = { setupLiveAudio, setupFileAudio, setupYouTubeAudio };
 })();

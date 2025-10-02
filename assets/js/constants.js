@@ -1,7 +1,7 @@
 (() => {
   const c = {
     // Online analysis settings
-    ANALYSIS_DELAY_MS: 2000,   // ms lookahead before scheduling visible notes
+    ANALYSIS_DELAY_MS: 3000,   // ms lookahead before scheduling visible notes (3s lag for streaming)
     FFT_SIZE: 2048,            // analyser FFT size
     ANALYSIS_HOP_MS: 20,       // how often we analyze (approx)
     MIN_ONSET_INTERVAL_MS: 120, // refractory period for onsets

@@ -70,6 +70,44 @@
     state.raf = requestAnimationFrame(ts => tick(state, ts));
   }
 
+  async function startYouTubeMode(state) {
+    state.mode = 'youtube';
+
+    // Ensure a loaded YouTube player exists
+    if (!window.RG.YouTube || !window.RG.YouTube.isLoaded || !window.RG.YouTube.isLoaded()) {
+      statusEl.textContent = 'Load a YouTube link first.';
+      return;
+    }
+
+    try {
+      await window.RG.Audio.setupYouTubeAudio(state);
+    } catch (err) {
+      console.error('Display capture error:', err);
+      statusEl.textContent = 'Capture cancelled/unavailable. You must share “This Tab” with audio.';
+      return;
+    }
+
+    try {
+      await state.audioCtx.resume();
+      window.RG.YouTube.play();
+    } catch (err) {
+      console.error('YouTube play error:', err);
+      statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+      return;
+    }
+
+    state.startAt = performance.now();
+    state.audioBaseTime = state.audioCtx.currentTime;
+    state.running = true;
+    state.ended = false;
+
+    const title = (window.RG.YouTube.getTitle && window.RG.YouTube.getTitle()) || 'YouTube';
+    statusEl.textContent = `YouTube mode: streaming “${title}” (delay ${window.RG.Const.ANALYSIS_DELAY_MS} ms). Press Space to stop.`;
+
+    state.analysisTimer = setInterval(() => window.RG.Analysis.analyzeStep(state), window.RG.Const.ANALYSIS_HOP_MS);
+    state.raf = requestAnimationFrame(ts => tick(state, ts));
+  }
+
   async function startGame(state) {
     if (state.running) return;
 
@@ -89,6 +127,12 @@
     if (hasChart && (state.preferChartOnStart || true)) {
       state.preferChartOnStart = false;
       await startChartPlayback(state, file);
+      return;
+    }
+
+    // Prefer YouTube mode if a video is loaded
+    if (window.RG.YouTube && window.RG.YouTube.isLoaded && window.RG.YouTube.isLoaded()) {
+      await startYouTubeMode(state);
       return;
     }
 
@@ -161,6 +205,17 @@
         try { state.mediaNode.disconnect(); } catch {}
       }
       statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
+    } else if (state.mode === 'youtube') {
+      try { window.RG.YouTube.pause(); } catch {}
+      if (state.captureStream) {
+        try { state.captureStream.getTracks().forEach(t => t.stop()); } catch {}
+        state.captureStream = null;
+      }
+      if (state.source) {
+        try { state.source.disconnect(); } catch {}
+        state.source = null;
+      }
+      statusEl.textContent = 'Stopped — press Space to start YouTube again, or load a new link.';
     } else {
       if (state.micStream) {
         state.micStream.getTracks().forEach(t => t.stop());
