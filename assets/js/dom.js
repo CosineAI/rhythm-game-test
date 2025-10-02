@@ -18,6 +18,10 @@
   const playChartBtn = $('#playChartBtn');
   const difficultySelect = $('#difficultySelect');
 
+  // New top-level controls
+  const newSongBtn = $('#newSongBtn');
+  const pausePlayBtn = $('#pausePlayBtn');
+
   const gridlinesContainer = $('#gridlines');
 
   const comboEl = $('#combo');
@@ -53,6 +57,7 @@
   const setupDifficulty = $('#setupDifficulty');
   const setupGenerate = $('#setupGenerate');
   const setupStart = $('#setupStart');
+  const setupOpenSettings = $('#setupOpenSettings');
 
   // Results modal elements
   const resultsModal = $('#resultsModal');
@@ -116,6 +121,9 @@
     setupFile,
     setupDifficulty,
     setupGenerate,
-    setupStart
+    setupStart,
+    newSongBtn,
+    pausePlayBtn,
+    setupOpenSettings
   };
 })();

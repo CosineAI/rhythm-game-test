@@ -15,27 +15,9 @@
       </header>
 
       <div class="controls">
-        <label class="file-upload">
-          <input type="file" id="audioFile" accept="audio/*">
-          <span>Upload audio (mp3/wav)</span>
-        </label>
-
-        <div class="inline-group">
-          <label for="difficultySelect" class="muted">Difficulty</label>
-          <select id="difficultySelect" class="select">
-            <option value="veryeasy">Very Easy</option>
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-
-        <button id="analyzeBtn" class="btn" disabled>Analyze (precompute chart)</button>
-        <button id="playChartBtn" class="btn primary" disabled>Play chart</button>
-
+        <button id="newSongBtn" class="btn primary">New Song</button>
+        <button id="pausePlayBtn" class="btn">Pause/Play</button>
         <button id="openSettingsBtn" class="btn">Settings</button>
-        <button id="fullscreenBtn" class="btn">Fullscreen</button>
-        <small class="hint">Space to start/stop. If no file is selected, the microphone is used.</small>
       </div>
 
       <audio id="audioPlayer" preload="auto"></audio>
@@ -224,6 +206,7 @@
         </div>
       </div>
       <footer class="modal-footer">
+        <button id="setupOpenSettings" class="btn">Settings</button>
         <button id="setupStart" class="btn primary" disabled>Start</button>
       </footer>
     </div>

@@ -5,6 +5,9 @@
     setupDifficulty,
     setupGenerate,
     setupStart,
+    setupOpenSettings,
+    newSongBtn,
+    pausePlayBtn,
     statusEl
   } = window.RG.Dom;
 
@@ -96,6 +99,38 @@
         await window.RG.UI.countdownThen(state, async () => {
           await window.RG.Game.startChartPlayback(state, selectedFile);
         });
+      });
+    }
+
+    // Setup modal: open Settings
+    if (setupOpenSettings) {
+      setupOpenSettings.addEventListener('click', () => {
+        window.RG.Settings.openModal();
+      });
+    }
+
+    // New top-level buttons
+    if (newSongBtn) {
+      newSongBtn.addEventListener('click', () => {
+        openSetup();
+      });
+    }
+    if (pausePlayBtn) {
+      pausePlayBtn.addEventListener('click', async () => {
+        const state = window.RG.State.state;
+        if (state.running) {
+          window.RG.Game.endGame(state);
+        } else {
+          // If we have a precomputed chart and (optionally) a remembered file via setup modal, start it
+          // Otherwise open setup
+          if (state.precomputedChart && selectedFile) {
+            await window.RG.UI.countdownThen(state, async () => {
+              await window.RG.Game.startChartPlayback(state, selectedFile);
+            });
+          } else {
+            openSetup();
+          }
+        }
       });
     }
 
