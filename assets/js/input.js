@@ -187,11 +187,11 @@
       captureTabBtn.addEventListener('click', async () => {
         const state = window.RG.State.state;
         if (state.running) {
-          window.RG.Game.endGame(state);
+          statusEl.textContent = 'Stop the current session first (Space).';
           return;
         }
-        const d = captureDelaySec ? Number(captureDelaySec.value) : 3.0;
-        await window.RG.Game.startCaptureDelayMode(state, d);
+        const sec = captureDelaySec ? Number(captureDelaySec.value) || 3 : 3;
+        await window.RG.Game.startCaptureDelayMode(state, sec);
       });
     }
   }

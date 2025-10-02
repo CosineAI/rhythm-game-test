@@ -23,7 +23,7 @@
       raf: 0,
 
       // Mode and audio graph
-      mode: 'live',       // 'live' | 'file' | 'chart' | 'youtube'
+      mode: 'live',       // 'live' | 'file' | 'chart' | 'youtube' | 'capture-delay'
       audioCtx: null,
       analyser: null,
       micStream: null,
@@ -39,6 +39,8 @@
       prevLane: -1,
       scratchFreq: null,
       captureStream: null, // getDisplayMedia stream (YouTube/tab capture)
+      delayNode: null,     // DelayNode when using capture-delay
+      playbackDelayMs: 0,  // Additional playback delay to align schedule with delayed audio
 
       // YouTube state
       ytPlayer: null,

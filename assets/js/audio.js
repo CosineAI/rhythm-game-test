@@ -176,23 +176,27 @@
       await Promise.all(aTracks.map(t => t.applyConstraints ? t.applyConstraints({ suppressLocalAudioPlayback: true }) : null));
     } catch {}
 
-    // Source -> Delay -> [Analyser, Destination]
+    // Source -> [Analyser] and Source -> Delay -> Destination
     const source = state.audioCtx.createMediaStreamSource(stream);
 
     const maxDelay = 12.0;
     const delay = state.audioCtx.createDelay(maxDelay);
     delay.delayTime.value = dSec;
 
+    // Analyse the pre-delayed signal for early detection
+    source.connect(state.analyser);
+    // Play back the delayed signal for the user
     source.connect(delay);
-    delay.connect(state.analyser);
     delay.connect(state.audioCtx.destination);
 
     state.source = source;
     state.captureStream = stream;
     state.delayNode = delay;
 
-    // Since analyser sees the delayed audio, we don't need extra visual delay beyond user offset.
-    state.playbackDelayMs = Math.max(0, 0);
+    // Align scheduling so notes hit with the delayed audio:
+    // effective lookahead = ANALYSIS_DELAY_MS + playbackDelayMs  ~= desired delay (dSec)
+    const base = window.RG.Const.ANALYSIS_DELAY_MS;
+    state.playbackDelayMs = Math.max(0, Math.round(dSec * 1000 - base));
   }
 
   window.RG.Audio = { setupLiveAudio, setupFileAudio, setupYouTubeAudio, setupCapturedTabWithDelay };
