@@ -8,7 +8,16 @@
     keycapByLane,
     comboEl,
     comboValueEl,
-    comboToastEl
+    comboToastEl,
+    resultsModal,
+    resultsClose,
+    resultsRestart,
+    resultPerfect,
+    resultGood,
+    resultOkay,
+    resultBad,
+    resultMaxCombo,
+    resultTotalScore
   } = window.RG.Dom;
 
   function flash(text, cls) {
@@ -164,6 +173,42 @@
     }
   }
 
+  // Results modal
+  function showResults(state) {
+    if (!resultsModal) return;
+    // Populate values
+    if (resultPerfect) resultPerfect.textContent = String(state.counts.perfect || 0);
+    if (resultGood) resultGood.textContent = String(state.counts.good || 0);
+    if (resultOkay) resultOkay.textContent = String(state.counts.okay || 0);
+    if (resultBad) resultBad.textContent = String(state.counts.miss || 0);
+    if (resultMaxCombo) resultMaxCombo.textContent = String(state.maxCombo || 0);
+    if (resultTotalScore) resultTotalScore.textContent = String(state.score || 0);
+
+    resultsModal.classList.remove('hidden');
+    resultsModal.setAttribute('aria-hidden', 'false');
+
+    // Close handlers
+    function close() {
+      resultsModal.classList.add('hidden');
+      resultsModal.setAttribute('aria-hidden', 'true');
+    }
+    const backdrop = resultsModal.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', close, { once: true });
+    }
+    if (resultsClose) {
+      resultsClose.addEventListener('click', close, { once: true });
+    }
+    if (resultsRestart) {
+      resultsRestart.addEventListener('click', () => {
+        close();
+        const s = window.RG.State.state;
+        // Start chart or file mode again if applicable; else live
+        window.RG.Game.startGame(s);
+      }, { once: true });
+    }
+  }
+
   window.RG.UI = {
     flash,
     triggerGlow,
@@ -174,6 +219,7 @@
     comboHit,
     comboMiss,
     applyKeyLayout,
-    refreshKeycapLabels
+    refreshKeycapLabels,
+    showResults
   };
 })();

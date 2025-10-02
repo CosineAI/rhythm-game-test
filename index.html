@@ -154,6 +154,49 @@
     </div>
   </div>
 
+  <!-- Results Modal -->
+  <div id="resultsModal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel" role="document">
+      <header class="modal-header">
+        <h2 id="resultsTitle">Results</h2>
+      </header>
+      <div class="modal-body results-body">
+        <div class="results-grid">
+          <div class="result-row">
+            <span class="result-label perfect">Perfect</span>
+            <span class="result-value" id="resultPerfect">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label good">Good</span>
+            <span class="result-value" id="resultGood">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label okay">Okay</span>
+            <span class="result-value" id="resultOkay">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label bad">Bad</span>
+            <span class="result-value" id="resultBad">0</span>
+          </div>
+          <div class="result-sep"></div>
+          <div class="result-row">
+            <span class="result-label">Max Combo</span>
+            <span class="result-value" id="resultMaxCombo">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Total Score</span>
+            <span class="result-value big" id="resultTotalScore">0</span>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="resultsClose" class="btn">Close</button>
+        <button id="resultsRestart" class="btn primary">Play Again</button>
+      </footer>
+    </div>
+  </div>
+
   <script src="assets/js/rg.js"></script>
   <script src="assets/js/constants.js"></script>
   <script src="assets/js/difficulty.js"></script>

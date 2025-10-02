@@ -161,6 +161,10 @@
         try { state.mediaNode.disconnect(); } catch {}
       }
       statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
+      // Show results after finishing a song (file/chart modes)
+      if (window.RG.UI && window.RG.UI.showResults) {
+        window.RG.UI.showResults(state);
+      }
     } else {
       if (state.micStream) {
         state.micStream.getTracks().forEach(t => t.stop());

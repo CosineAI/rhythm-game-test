@@ -47,6 +47,17 @@
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
 
+  // Results modal elements
+  const resultsModal = $('#resultsModal');
+  const resultsClose = $('#resultsClose');
+  const resultsRestart = $('#resultsRestart');
+  const resultPerfect = $('#resultPerfect');
+  const resultGood = $('#resultGood');
+  const resultOkay = $('#resultOkay');
+  const resultBad = $('#resultBad');
+  const resultMaxCombo = $('#resultMaxCombo');
+  const resultTotalScore = $('#resultTotalScore');
+
   window.RG.Dom = {
     playfield,
     judgementEl,
@@ -84,6 +95,15 @@
     fallSpeedNumber,
     showGridlines,
     settingsSave,
-    settingsCancel
+    settingsCancel,
+    resultsModal,
+    resultsClose,
+    resultsRestart,
+    resultPerfect,
+    resultGood,
+    resultOkay,
+    resultBad,
+    resultMaxCombo,
+    resultTotalScore
   };
 })();
