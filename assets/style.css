@@ -659,6 +659,40 @@ footer {
   border-top: 1px solid #1b2335;
 }
 
+/* Setup modal polish */
+.modal-panel.setup .modal-header {
+  padding-bottom: 10px;
+}
+.modal-panel.setup .modal-header h2 {
+  font-size: 18px;
+  background: linear-gradient(90deg, #7cf48b, #7bcff6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.setup-body .file-upload.wide {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 14px;
+}
+.setup-body .file-upload.wide span {
+  font-size: 14px;
+}
+.setup-body .two-col {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+.setup-body .two-col .col.align-end {
+  display: grid;
+  align-content: end;
+}
+.setup-body .select {
+  width: 100%;
+}
+
 /* Results modal styles */
 .results-body {
   padding-top: 16px;

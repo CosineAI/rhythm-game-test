@@ -11,6 +11,9 @@
     statusEl
   } = window.RG.Dom;
 
+  // Optional label for file name
+  const setupFileLabel = document.getElementById('setupFileLabel');
+
   let selectedFile = null;
 
   function openSetup() {
@@ -59,6 +62,11 @@
         const state = window.RG.State.state;
         if (state) state.precomputedChart = null;
         if (setupStart) setupStart.disabled = true;
+
+        if (setupFileLabel) {
+          setupFileLabel.textContent = selectedFile ? selectedFile.name : 'Select audio file…';
+        }
+
         if (statusEl) {
           if (selectedFile) statusEl.textContent = `Selected: ${selectedFile.name}. Click Generate to precompute a chart.`;
           else statusEl.textContent = 'No file selected.';

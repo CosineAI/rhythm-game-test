@@ -182,27 +182,34 @@
   <!-- Setup / Start Modal -->
   <div id="setupModal" class="modal" aria-hidden="false" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
     <div class="modal-backdrop" data-close="1"></div>
-    <div class="modal-panel" role="document">
+    <div class="modal-panel setup" role="document">
       <header class="modal-header">
         <h2 id="setupTitle">Get Ready</h2>
+        <small class="muted">Pick a song, set difficulty, generate a chart, then start.</small>
       </header>
-      <div class="modal-body">
+      <div class="modal-body setup-body">
         <div class="form-row">
-          <label for="setupFile">Choose MP3/WAV</label>
-          <input type="file" id="setupFile" accept="audio/*">
+          <label>Choose MP3/WAV</label>
+          <label class="file-upload wide">
+            <input type="file" id="setupFile" accept="audio/*">
+            <span id="setupFileLabel">Select audio file…</span>
+          </label>
+          <small class="muted">We’ll analyze your song to create a note chart.</small>
         </div>
-        <div class="form-row">
-          <label for="setupDifficulty">Difficulty</label>
-          <select id="setupDifficulty" class="select">
-            <option value="veryeasy">Very Easy</option>
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <button id="setupGenerate" class="btn">Generate Chart</button>
-          <small class="muted">Generates a playable note chart for the selected song.</small>
+        <div class="form-row two-col">
+          <div class="col">
+            <label for="setupDifficulty">Difficulty</label>
+            <select id="setupDifficulty" class="select">
+              <option value="veryeasy">Very Easy</option>
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div class="col align-end">
+            <label>&nbsp;</label>
+            <button id="setupGenerate" class="btn">Generate Chart</button>
+          </div>
         </div>
       </div>
       <footer class="modal-footer">
