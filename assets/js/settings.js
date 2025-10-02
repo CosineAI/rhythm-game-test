@@ -318,10 +318,14 @@
 
       setGridlinesEnabled(grid);
 
+      // Reflect difficulty to any legacy on-page select and apply lane layout now
       if (difficultySelect) {
         difficultySelect.value = diff;
         const ev = new Event('change', { bubbles: true });
         difficultySelect.dispatchEvent(ev);
+      }
+      if (window.RG.UI && window.RG.UI.applyKeyLayout) {
+        window.RG.UI.applyKeyLayout();
       }
 
       if (statusEl) {
