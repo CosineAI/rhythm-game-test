@@ -58,6 +58,7 @@
   const setupGenerate = $('#setupGenerate');
   const setupStart = $('#setupStart');
   const setupOpenSettings = $('#setupOpenSettings');
+  const setupSongName = $('#setupSongName');
 
   // Results modal elements
   const resultsModal = $('#resultsModal');
@@ -124,6 +125,7 @@
     setupStart,
     newSongBtn,
     pausePlayBtn,
-    setupOpenSettings
+    setupOpenSettings,
+    setupSongName
   };
 })();

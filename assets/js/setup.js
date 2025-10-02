@@ -8,10 +8,11 @@
     setupOpenSettings,
     newSongBtn,
     pausePlayBtn,
-    statusEl
+    statusEl,
+    setupSongName
   } = window.RG.Dom;
 
-  // Optional label for file name
+  // Optional label for file input
   const setupFileLabel = document.getElementById('setupFileLabel');
 
   let selectedFile = null;
@@ -26,6 +27,10 @@
       }
       if (setupFile) setupFile.value = '';
       if (setupFileLabel) setupFileLabel.textContent = 'Select audio file…';
+      if (setupSongName) {
+        setupSongName.textContent = '';
+        setupSongName.removeAttribute('title');
+      }
       if (setupStart) setupStart.disabled = true;
     }
 
@@ -87,12 +92,19 @@
         }
         if (setupStart) setupStart.disabled = true;
 
+        // Keep the file button label constant; show selection in fixed container
         if (setupFileLabel) {
-          setupFileLabel.textContent = selectedFile ? selectedFile.name : 'Select audio file…';
+          setupFileLabel.textContent = 'Select audio file…';
+        }
+        if (setupSongName) {
+          const name = selectedFile ? selectedFile.name : '';
+          setupSongName.textContent = name;
+          if (name) setupSongName.setAttribute('title', name);
+          else setupSongName.removeAttribute('title');
         }
 
         if (statusEl) {
-          if (selectedFile) statusEl.textContent = `Selected: ${selectedFile.name}. Click Generate to precompute a chart.`;
+          if (selectedFile) statusEl.textContent = `Selected: ${selectedFile.name}`;
           else statusEl.textContent = 'No file selected.';
         }
       });
@@ -109,7 +121,7 @@
         if (setupStart) setupStart.disabled = true;
         if (statusEl && selectedFile) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff}. Click Generate to precompute a chart.`;
+          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff}.`;
         }
       });
     }
