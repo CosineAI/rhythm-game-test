@@ -45,8 +45,8 @@
       const state = window.RG.State.state;
       if (key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        if (!state.running) window.RG.Game.startGame(state);
-        else window.RG.Game.endGame(state);
+        if (state.running) window.RG.Game.pause(state);
+        else if (state.paused) window.RG.Game.resume(state);
         return;
       }
       const map = (window.RG.Settings && window.RG.Settings.getKeyToLane && window.RG.Settings.getKeyToLane()) || {};
@@ -113,9 +113,9 @@
 
         if (f) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
+          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Play for live analysis.`;
         } else {
-          statusEl.textContent = 'No file selected — Space will start microphone live mode.';
+          statusEl.textContent = 'No file selected — Play will start microphone live mode.';
         }
       });
     }
@@ -133,7 +133,7 @@
             if (playChartBtn) playChartBtn.disabled = true;
           }
           if (analyzeBtn) analyzeBtn.disabled = !f;
-          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
+          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Play for live analysis.`;
         }
       });
     }

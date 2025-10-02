@@ -20,7 +20,9 @@
 
   // New top-level controls
   const newSongBtn = $('#newSongBtn');
-  const pausePlayBtn = $('#pausePlayBtn');
+  const pauseBtn = $('#pauseBtn');
+  const playBtn = $('#playBtn');
+  const restartBtn = $('#restartBtn');
 
   const gridlinesContainer = $('#gridlines');
 
@@ -124,7 +126,9 @@
     setupGenerate,
     setupStart,
     newSongBtn,
-    pausePlayBtn,
+    pauseBtn,
+    playBtn,
+    restartBtn,
     setupOpenSettings,
     setupSongName
   };
