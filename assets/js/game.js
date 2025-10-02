@@ -70,6 +70,81 @@
     state.raf = requestAnimationFrame(ts => tick(state, ts));
   }
 
+  async function startYouTubeMode(state) {
+    state.mode = 'youtube';
+
+    // Ensure a loaded YouTube player exists
+    if (!window.RG.YouTube || !window.RG.YouTube.isLoaded || !window.RG.YouTube.isLoaded()) {
+      statusEl.textContent = 'Load a YouTube link first.';
+      return;
+    }
+
+    try {
+      await window.RG.Audio.setupYouTubeAudio(state);
+    } catch (err) {
+      console.error('Display capture error:', err);
+      statusEl.textContent = 'Capture cancelled/unavailable. You must share “This Tab” with audio.';
+      return;
+    }
+
+    try {
+      await state.audioCtx.resume();
+      window.RG.YouTube.play();
+    } catch (err) {
+      console.error('YouTube play error:', err);
+      statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+      return;
+    }
+
+    // Visual delay for non-buffered streaming (notes lag audio)
+    state.analysisVisualDelayMs = window.RG.Const.ANALYSIS_DELAY_MS;
+
+    state.startAt = performance.now();
+    state.audioBaseTime = state.audioCtx.currentTime;
+    state.running = true;
+    state.ended = false;
+
+    const title = (window.RG.YouTube.getTitle && window.RG.YouTube.getTitle()) || 'YouTube';
+    statusEl.textContent = `YouTube mode: streaming “${title}” (visual delay ${window.RG.Const.ANALYSIS_DELAY_MS} ms). Press Space to stop.`;
+
+    state.analysisTimer = setInterval(() => window.RG.Analysis.analyzeStep(state), window.RG.Const.ANALYSIS_HOP_MS);
+    state.raf = requestAnimationFrame(ts => tick(state, ts));
+  }
+
+  async function startCaptureDelayMode(state, delaySec) {
+    state.mode = 'capture-delay';
+
+    try {
+      await window.RG.Audio.setupCapturedTabWithDelay(state, delaySec);
+    } catch (err) {
+      console.error('Display capture error:', err);
+      statusEl.textContent = 'Capture cancelled/unavailable. Choose a tab or window and enable audio sharing.';
+      return;
+    }
+
+    try {
+      await state.audioCtx.resume();
+    } catch (err) {
+      console.error('Playback error:', err);
+      statusEl.textContent = 'Playback blocked. Click the page and try again.';
+      return;
+    }
+
+    // Analyzer is fed delayed audio, so no extra visual delay is needed
+    state.analysisVisualDelayMs = 0;
+
+    state.startAt = performance.now();
+    state.audioBaseTime = state.audioCtx.currentTime;
+    state.running = true;
+    state.ended = false;
+
+    const d = Math.max(0, Number(delaySec) || 0);
+    statusEl.textContent = `Tab capture (delayed): audio delayed ${d.toFixed(1)}s; notes aligned. Press Space to stop.`;
+
+    state.analysisTimer = setInterval(() => window.RG.Analysis.analyzeStep(state), window.RG.Const.ANALYSIS_HOP_MS);
+    state.raf = requestAnimationFrame(ts => tick(state, ts));
+  }
+
   async function startGame(state) {
     if (state.running) return;
 
@@ -89,6 +164,12 @@
     if (hasChart && (state.preferChartOnStart || true)) {
       state.preferChartOnStart = false;
       await startChartPlayback(state, file);
+      return;
+    }
+
+    // Prefer YouTube mode if a video is loaded
+    if (window.RG.YouTube && window.RG.YouTube.isLoaded && window.RG.YouTube.isLoaded()) {
+      await startYouTubeMode(state);
       return;
     }
 
@@ -161,6 +242,31 @@
         try { state.mediaNode.disconnect(); } catch {}
       }
       statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
+    } else if (state.mode === 'youtube') {
+      try { window.RG.YouTube.pause(); } catch {}
+      if (state.captureStream) {
+        try { state.captureStream.getTracks().forEach(t => t.stop()); } catch {}
+        state.captureStream = null;
+      }
+      if (state.source) {
+        try { state.source.disconnect(); } catch {}
+        state.source = null;
+      }
+      statusEl.textContent = 'Stopped — press Space to start YouTube again, or load a new link.';
+    } else if (state.mode === 'capture-delay') {
+      if (state.captureStream) {
+        try { state.captureStream.getTracks().forEach(t => t.stop()); } catch {}
+        state.captureStream = null;
+      }
+      if (state.delayNode) {
+        try { state.delayNode.disconnect(); } catch {}
+        state.delayNode = null;
+      }
+      if (state.source) {
+        try { state.source.disconnect(); } catch {}
+        state.source = null;
+      }
+      statusEl.textContent = 'Stopped — press Space or use Capture Tab to start again.';
     } else {
       if (state.micStream) {
         state.micStream.getTracks().forEach(t => t.stop());
@@ -181,5 +287,5 @@
     state.raf = requestAnimationFrame(t => tick(state, t));
   }
 
-  window.RG.Game = { startGame, startChartPlayback, endGame, tick };
+  window.RG.Game = { startGame, startChartPlayback, endGame, tick, startCaptureDelayMode };
 })();
