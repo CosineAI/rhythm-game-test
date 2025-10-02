@@ -13,7 +13,7 @@
       await state.audioCtx.resume();
     }
 
-    statusEl.textContent = 'Analyzing file (precomputing chart)…';
+    if (statusEl) statusEl.textContent = 'Analyzing file (precomputing chart)…';
 
     const arrayBuf = await file.arrayBuffer();
 
@@ -141,10 +141,12 @@
       beats
     };
 
-    playChartBtn.disabled = notes.length === 0;
-    statusEl.textContent = notes.length
-      ? `Chart ready (${diff.name}, ${notes.length} notes). Press “Play chart” or Space to start.`
-      : 'No strong onsets detected. Try another file or adjust thresholds.';
+    if (playChartBtn) playChartBtn.disabled = notes.length === 0;
+    if (statusEl) {
+      statusEl.textContent = notes.length
+        ? `Chart ready (${diff.name}, ${notes.length} notes). Click Start to play.`
+        : 'No strong onsets detected. Try another file or adjust thresholds.';
+    }
   }
 
   window.RG.Chart = { precomputeChartFromFile };

@@ -18,6 +18,10 @@
   const playChartBtn = $('#playChartBtn');
   const difficultySelect = $('#difficultySelect');
 
+  // New top-level controls
+  const newSongBtn = $('#newSongBtn');
+  const pausePlayBtn = $('#pausePlayBtn');
+
   const gridlinesContainer = $('#gridlines');
 
   const comboEl = $('#combo');
@@ -46,6 +50,26 @@
   const showGridlines = $('#showGridlines');
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
+
+  // Setup modal elements
+  const setupModal = $('#setupModal');
+  const setupFile = $('#setupFile');
+  const setupDifficulty = $('#setupDifficulty');
+  const setupGenerate = $('#setupGenerate');
+  const setupStart = $('#setupStart');
+  const setupOpenSettings = $('#setupOpenSettings');
+  const setupSongName = $('#setupSongName');
+
+  // Results modal elements
+  const resultsModal = $('#resultsModal');
+  const resultsReplay = $('#resultsReplay');
+  const resultsNewSong = $('#resultsNewSong');
+  const resultPerfect = $('#resultPerfect');
+  const resultGood = $('#resultGood');
+  const resultOkay = $('#resultOkay');
+  const resultBad = $('#resultBad');
+  const resultMaxCombo = $('#resultMaxCombo');
+  const resultTotalScore = $('#resultTotalScore');
 
   window.RG.Dom = {
     playfield,
@@ -84,6 +108,24 @@
     fallSpeedNumber,
     showGridlines,
     settingsSave,
-    settingsCancel
+    settingsCancel,
+    resultsModal,
+    resultsReplay,
+    resultsNewSong,
+    resultPerfect,
+    resultGood,
+    resultOkay,
+    resultBad,
+    resultMaxCombo,
+    resultTotalScore,
+    setupModal,
+    setupFile,
+    setupDifficulty,
+    setupGenerate,
+    setupStart,
+    newSongBtn,
+    pausePlayBtn,
+    setupOpenSettings,
+    setupSongName
   };
 })();

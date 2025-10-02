@@ -8,7 +8,16 @@
     keycapByLane,
     comboEl,
     comboValueEl,
-    comboToastEl
+    comboToastEl,
+    resultsModal,
+    resultsReplay,
+    resultsNewSong,
+    resultPerfect,
+    resultGood,
+    resultOkay,
+    resultBad,
+    resultMaxCombo,
+    resultTotalScore
   } = window.RG.Dom;
 
   function flash(text, cls) {
@@ -164,6 +173,82 @@
     }
   }
 
+  // Results modal
+  function showResults(state) {
+    if (!resultsModal) return;
+    // Populate values
+    if (resultPerfect) resultPerfect.textContent = String(state.counts.perfect || 0);
+    if (resultGood) resultGood.textContent = String(state.counts.good || 0);
+    if (resultOkay) resultOkay.textContent = String(state.counts.okay || 0);
+    if (resultBad) resultBad.textContent = String(state.counts.miss || 0);
+    if (resultMaxCombo) resultMaxCombo.textContent = String(state.maxCombo || 0);
+    if (resultTotalScore) resultTotalScore.textContent = String(state.score || 0);
+
+    resultsModal.classList.remove('hidden');
+    resultsModal.setAttribute('aria-hidden', 'false');
+
+    // Handlers
+    const backdrop = resultsModal.querySelector('.modal-backdrop');
+    function close() {
+      resultsModal.classList.add('hidden');
+      resultsModal.setAttribute('aria-hidden', 'true');
+    }
+    if (backdrop) backdrop.addEventListener('click', close, { once: true });
+
+    if (resultsReplay) {
+      resultsReplay.addEventListener('click', async () => {
+        close();
+        let s = window.RG.State.state;
+        // Ensure we have a chart and file to replay
+        if (s && s.precomputedChart && s._selectedFile) {
+          const file = s._selectedFile; // cache before reset
+          // Fresh run: reset state and score while keeping the chart and file
+          s = window.RG.Game.resetForNewRun(s, { keepChart: true, keepSelectedFile: true });
+          await window.RG.UI.countdownThen(s, async () => {
+            await window.RG.Game.startChartPlayback(s, file);
+          });
+        } else {
+          // Fallback: open setup if we can't replay
+          if (window.RG.Setup && window.RG.Setup.open) {
+            window.RG.Setup.open({ reset: true });
+          }
+        }
+      }, { once: true });
+    }
+
+    if (resultsNewSong) {
+      resultsNewSong.addEventListener('click', () => {
+        close();
+        const s = window.RG.State.state;
+        // Hard stop and clear chart/file references without showing results again
+        try { window.RG.Game.endGame(s, { showResults: false }); } catch {}
+        if (s) {
+          s.precomputedChart = null;
+          s._selectedFile = null;
+        }
+        // Open setup modal
+        if (window.RG.Setup && window.RG.Setup.open) {
+          window.RG.Setup.open({ reset: true });
+        } else {
+          const btn = document.getElementById('newSongBtn');
+          if (btn) btn.click();
+        }
+      }, { once: true });
+    }
+  }
+
+  async function countdownThen(state, fn) {
+    // Use the judgement element for a simple central countdown
+    const steps = ['3', '2', '1', 'Start!'];
+    for (let i = 0; i < steps.length; i++) {
+      flash(steps[i], i < steps.length - 1 ? 'good' : 'perfect');
+      await new Promise(r => setTimeout(r, i < steps.length - 1 ? 800 : 600));
+    }
+    // Clear
+    if (judgementEl) judgementEl.className = 'judgement';
+    await fn();
+  }
+
   window.RG.UI = {
     flash,
     triggerGlow,
@@ -174,6 +259,8 @@
     comboHit,
     comboMiss,
     applyKeyLayout,
-    refreshKeycapLabels
+    refreshKeycapLabels,
+    showResults,
+    countdownThen
   };
 })();

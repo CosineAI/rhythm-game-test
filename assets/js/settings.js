@@ -125,6 +125,16 @@
       difficultySelect
     } = window.RG.Dom;
     if (!settingsModal) return;
+
+    // If not doing the slide-with-setup choreography, ensure it's centered
+    const panel = settingsModal.querySelector('.modal-panel');
+    if (!window.RG.Settings._slideWithSetup) {
+      settingsModal.classList.remove('slide-stacked');
+      if (panel) {
+        panel.classList.remove('slide-in-right', 'slide-out-right');
+      }
+    }
+
     // Prefill from current cache / controls
     const currentDiff = (difficultySelect && difficultySelect.value) || getDifficulty();
     if (settingsDifficulty) settingsDifficulty.value = currentDiff;
@@ -156,8 +166,46 @@
   function closeModal() {
     const { settingsModal } = window.RG.Dom;
     if (!settingsModal) return;
+
+    // If invoked via setup modal slide transition, animate out then hide
+    if (window.RG.Settings && window.RG.Settings._slideWithSetup) {
+      const settingsPanel = settingsModal.querySelector('.modal-panel');
+      const setupModal = document.getElementById('setupModal');
+      const setupPanel = setupModal ? setupModal.querySelector('.modal-panel.setup') : null;
+
+      if (settingsPanel && setupPanel) {
+        // Reverse animation: settings out right, setup back in
+        settingsPanel.classList.remove('slide-in-right');
+        settingsPanel.classList.add('slide-out-right');
+        setupPanel.classList.remove('slide-out-left');
+        // force reflow to ensure transition
+        void setupPanel.offsetWidth;
+        setupPanel.classList.add('slide-in-left');
+
+        const onDone = () => {
+          settingsPanel.removeEventListener('transitionend', onDone);
+          settingsModal.classList.add('hidden');
+          settingsModal.setAttribute('aria-hidden', 'true');
+          settingsModal.classList.remove('slide-stacked');
+          settingsPanel.classList.remove('slide-out-right');
+          setupPanel.classList.remove('slide-in-left');
+          // clear flag
+          window.RG.Settings._slideWithSetup = false;
+        };
+        settingsPanel.addEventListener('transitionend', onDone);
+        return;
+      }
+    }
+
+    // Default immediate close
     settingsModal.classList.add('hidden');
     settingsModal.setAttribute('aria-hidden', 'true');
+    // Ensure stale slide classes aren't retained so future opens are centered
+    settingsModal.classList.remove('slide-stacked');
+    const panel = settingsModal.querySelector('.modal-panel');
+    if (panel) {
+      panel.classList.remove('slide-in-right', 'slide-out-right');
+    }
   }
 
   function init() {
@@ -270,10 +318,14 @@
 
       setGridlinesEnabled(grid);
 
+      // Reflect difficulty to any legacy on-page select and apply lane layout now
       if (difficultySelect) {
         difficultySelect.value = diff;
         const ev = new Event('change', { bubbles: true });
         difficultySelect.dispatchEvent(ev);
+      }
+      if (window.RG.UI && window.RG.UI.applyKeyLayout) {
+        window.RG.UI.applyKeyLayout();
       }
 
       if (statusEl) {

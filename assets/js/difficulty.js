@@ -1,5 +1,10 @@
 (() => {
   function getDifficulty() {
+    // Prefer persisted/app-level setting
+    if (window.RG && window.RG.Settings && window.RG.Settings.getDifficulty) {
+      return window.RG.Settings.getDifficulty() || 'normal';
+    }
+    // Fallback to any legacy on-page select if present
     const el = window.RG.Dom && window.RG.Dom.difficultySelect;
     const v = (el && el.value) || 'normal';
     return (v === 'veryeasy' || v === 'easy' || v === 'hard') ? v : 'normal';

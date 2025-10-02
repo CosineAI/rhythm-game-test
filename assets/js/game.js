@@ -2,6 +2,19 @@
   const { statusEl, audioEl, playChartBtn, fileInput } = window.RG.Dom;
   const { measure, clearNotes } = window.RG.State;
 
+  function resetForNewRun(state, { keepChart = true, keepSelectedFile = keepChart } = {}) {
+    const prevChart = keepChart ? state.precomputedChart : null;
+    const prevFile = keepSelectedFile ? state._selectedFile : null;
+    clearNotes(state);
+    window.RG.State.state = Object.assign(window.RG.State.resetState(), {});
+    const st = window.RG.State.state;
+    st.precomputedChart = prevChart;
+    st._selectedFile = prevFile;
+    measure(st);
+    if (window.RG.Score && window.RG.Score.reset) window.RG.Score.reset(st);
+    return st;
+  }
+
   async function startChartPlayback(state, file) {
     state.mode = 'chart';
 
@@ -73,15 +86,8 @@
   async function startGame(state) {
     if (state.running) return;
 
-    // Preserve any precomputed chart across reset
-    const prevChart = state.precomputedChart;
-
-    clearNotes(state);
-    window.RG.State.state = Object.assign(window.RG.State.resetState(), {});
-    state = window.RG.State.state;
-    state.precomputedChart = prevChart;
-    measure(state);
-    if (window.RG.Score && window.RG.Score.reset) window.RG.Score.reset(state);
+    // Reset to fresh run but preserve any precomputed chart
+    state = resetForNewRun(state, { keepChart: true });
 
     const file = fileInput && fileInput.files && fileInput.files[0];
     const hasChart = !!(file && state.precomputedChart && state.precomputedChart.fileName === file.name);
@@ -143,7 +149,9 @@
     }
   }
 
-  function endGame(state) {
+  function endGame(state, opts = {}) {
+    const showResults = opts.showResults !== false;
+
     state.running = false;
     state.ended = true;
     cancelAnimationFrame(state.raf);
@@ -161,6 +169,10 @@
         try { state.mediaNode.disconnect(); } catch {}
       }
       statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
+      // Show results after finishing a song (file/chart modes) unless suppressed
+      if (showResults && window.RG.UI && window.RG.UI.showResults) {
+        window.RG.UI.showResults(state);
+      }
     } else {
       if (state.micStream) {
         state.micStream.getTracks().forEach(t => t.stop());
@@ -181,5 +193,5 @@
     state.raf = requestAnimationFrame(t => tick(state, t));
   }
 
-  window.RG.Game = { startGame, startChartPlayback, endGame, tick };
+  window.RG.Game = { startGame, startChartPlayback, endGame, tick, resetForNewRun };
 })();

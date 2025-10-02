@@ -284,7 +284,7 @@ main {
   height: var(--keycaps-h);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  padding: 12px 8px 10px;
+  padding: 12px 0 10px; /* remove horizontal padding so keycaps align with lanes */
   gap: 0;
   pointer-events: none;
   background: linear-gradient(180deg, transparent, rgba(0,0,0,0.08) 30%, rgba(0,0,0,0.22));
@@ -583,6 +583,13 @@ footer {
   inset: 0;
   z-index: 50;
 }
+/* Ensure Settings modal overlays the startup (setup) modal */
+#settingsModal {
+  z-index: 60;
+}
+#settingsModal .modal-panel {
+  border-radius: 12px;
+}
 .modal-backdrop {
   position: absolute;
   inset: 0;
@@ -599,6 +606,34 @@ footer {
   border: 1px solid #1b2335;
   border-radius: 10px;
   box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 0 60px rgba(90, 120, 200, 0.08);
+  transition: transform 300ms ease, opacity 300ms ease;
+}
+
+/* Sliding coordination between Setup and Settings */
+#settingsModal.slide-stacked .modal-backdrop {
+  display: none;
+}
+/* Default offscreen position for settings panel when stacked (off to the right) */
+#settingsModal.slide-stacked .modal-panel {
+  transform: translate(150%, -54%);
+  opacity: 0;
+}
+#settingsModal.slide-stacked .modal-panel.slide-in-right {
+  transform: translate(-50%, -54%); /* centered */
+  opacity: 1;
+}
+#settingsModal.slide-stacked .modal-panel.slide-out-right {
+  transform: translate(150%, -54%); /* off to the right */
+  opacity: 0;
+}
+/* Move setup panel fully offscreen to the left while settings is visible */
+#setupModal .modal-panel.setup.slide-out-left {
+  transform: translate(-200%, -54%);
+  opacity: 0.6;
+}
+#setupModal .modal-panel.setup.slide-in-left {
+  transform: translate(-50%, -54%); /* centered */
+  opacity: 1;
 }
 .modal-header {
   padding: 14px 16px 8px;
@@ -657,4 +692,199 @@ footer {
   gap: 10px;
   padding: 12px 16px 16px;
   border-top: 1px solid #1b2335;
+}
+
+/* Setup modal polish */
+.modal-panel.setup {
+  /* Slightly brighter, more contrasted card */
+  background: linear-gradient(180deg, #101634, #0e142b);
+  border: 1px solid #2a3a6a;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.65),
+    inset 0 0 80px rgba(100, 140, 255, 0.08),
+    0 0 0 1px rgba(130, 170, 255, 0.06);
+}
+.modal-panel.setup .modal-header {
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid rgba(120, 160, 255, 0.18);
+}
+.modal-panel.setup .modal-header h2 {
+  font-size: 18px;
+  background: linear-gradient(90deg, #7cf48b, #7bcff6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.6px;
+}
+.modal-panel.setup .modal-header .muted {
+  display: block;
+  margin-top: 4px;
+  color: #9fb3d9;
+  opacity: 0.9;
+}
+.modal-panel.setup .modal-body {
+  padding: 16px 18px 8px;
+}
+.setup-body {
+  display: grid;
+  gap: 16px;
+}
+.setup-body .form-row {
+  display: grid;
+  gap: 10px;
+}
+.setup-body .file-upload.wide {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  padding: 14px 16px;
+  border-color: #2c3e72;
+  background: linear-gradient(180deg, #121a36, #0e152e);
+  transition: filter 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.setup-body .file-upload.wide:hover {
+  filter: brightness(1.06);
+  border-color: #395296;
+  background: linear-gradient(180deg, #162047, #101939);
+}
+.setup-body .file-upload.wide span {
+  font-size: 14px;
+  color: #d6e5ff;
+}
+.setup-body .song-name {
+  min-height: 2.6em; /* ~2 lines */
+  max-height: 2.6em;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  color: #d6e5ff;
+  background: linear-gradient(180deg, #121a36, #0e152e);
+  border: 1px solid #2c3e72;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.setup-body .two-col {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: end;
+}
+.setup-body .two-col .col.align-end {
+  display: grid;
+  align-content: end;
+}
+.setup-body .select {
+  width: 100%;
+}
+.modal-panel.setup .modal-footer {
+  padding: 14px 18px 16px;
+  border-top: 1px solid rgba(120, 160, 255, 0.18);
+  gap: 12px;
+  justify-content: space-between; /* Settings on left, Start on right */
+}
+
+/* Match Start button radius and thickness for Settings button */
+.modal-panel.setup #setupOpenSettings {
+  border-radius: 12px;
+  border-width: 2px;
+}
+
+/* Slight emphasis tweaks for controls within setup */
+.modal-panel.setup .btn.primary {
+  background: linear-gradient(180deg, #2b4a86, #1b2e57);
+  border-color: #37579a;
+}
+.modal-panel.setup .btn {
+  background: #17233f;
+  border-color: #2a3f72;
+}
+.modal-panel.setup .select,
+.modal-panel.setup .number,
+.modal-panel.setup .keybind,
+.modal-panel.setup input[type="range"] {
+  border-color: #2a3f72;
+  background: #111a33;
+}
+
+/* Fancy Start button — shimmering rainbow when ready (enabled) */
+@keyframes startRainbow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.modal-panel.setup #setupStart {
+  font-size: 18px;
+  font-weight: 900;
+  padding: 14px 26px;
+  min-width: 200px;
+  border-radius: 12px;
+  border-width: 2px;
+  position: relative;
+  letter-spacing: 0.3px;
+}
+.modal-panel.setup #setupStart:not(:disabled) {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(90deg, #7cf48b, #7bcff6, #c4a5fd, #7cf48b) padding-box,
+    linear-gradient(90deg, #7cf48b, #7bcff6, #c4a5fd, #7cf48b) border-box;
+  background-size: 350% 100%, 350% 100%;
+  background-clip: padding-box, border-box;
+  animation: startRainbow 3600ms linear infinite;
+  animation-direction: alternate;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  box-shadow: 0 8px 24px rgba(124,244,139,0.18), 0 2px 10px rgba(123,207,246,0.12);
+}
+.modal-panel.setup #setupStart:not(:disabled):hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 28px rgba(124,244,139,0.22), 0 3px 12px rgba(123,207,246,0.16);
+}
+
+/* Results modal styles */
+.results-body {
+  padding-top: 16px;
+}
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: 8px;
+  column-gap: 12px;
+  align-items: center;
+}
+.result-row {
+  display: contents;
+}
+.result-label {
+  color: #cfe2ff;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+.result-label.perfect { color: var(--perfect); }
+.result-label.good    { color: var(--good); }
+.result-label.okay    { color: var(--okay); }
+.result-label.bad     { color: var(--miss); }
+
+.result-value {
+  font-size: 18px;
+  font-weight: 800;
+  text-align: right;
+  color: #eaf2ff;
+}
+.result-value.big {
+  font-size: 24px;
+  background: linear-gradient(90deg, #7cf48b, #7bcff6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 4px 12px rgba(124,244,139,0.15);
+}
+
+.result-sep {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(200,220,255,0.08), rgba(200,220,255,0.18), rgba(200,220,255,0.08));
+  margin: 6px 0 2px;
 }

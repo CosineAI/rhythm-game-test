@@ -15,27 +15,9 @@
       </header>
 
       <div class="controls">
-        <label class="file-upload">
-          <input type="file" id="audioFile" accept="audio/*">
-          <span>Upload audio (mp3/wav)</span>
-        </label>
-
-        <div class="inline-group">
-          <label for="difficultySelect" class="muted">Difficulty</label>
-          <select id="difficultySelect" class="select">
-            <option value="veryeasy">Very Easy</option>
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-
-        <button id="analyzeBtn" class="btn" disabled>Analyze (precompute chart)</button>
-        <button id="playChartBtn" class="btn primary" disabled>Play chart</button>
-
+        <button id="newSongBtn" class="btn primary">New Song</button>
+        <button id="pausePlayBtn" class="btn">Pause/Play</button>
         <button id="openSettingsBtn" class="btn">Settings</button>
-        <button id="fullscreenBtn" class="btn">Fullscreen</button>
-        <small class="hint">Space to start/stop. If no file is selected, the microphone is used.</small>
       </div>
 
       <audio id="audioPlayer" preload="auto"></audio>
@@ -154,6 +136,90 @@
     </div>
   </div>
 
+  <!-- Results Modal -->
+  <div id="resultsModal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel" role="document">
+      <header class="modal-header">
+        <h2 id="resultsTitle">Results</h2>
+      </header>
+      <div class="modal-body results-body">
+        <div class="results-grid">
+          <div class="result-row">
+            <span class="result-label perfect">Perfect</span>
+            <span class="result-value" id="resultPerfect">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label good">Good</span>
+            <span class="result-value" id="resultGood">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label okay">Okay</span>
+            <span class="result-value" id="resultOkay">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label bad">Bad</span>
+            <span class="result-value" id="resultBad">0</span>
+          </div>
+          <div class="result-sep"></div>
+          <div class="result-row">
+            <span class="result-label">Max Combo</span>
+            <span class="result-value" id="resultMaxCombo">0</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Total Score</span>
+            <span class="result-value big" id="resultTotalScore">0</span>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="resultsNewSong" class="btn">Play New Song</button>
+        <button id="resultsReplay" class="btn primary">Replay</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Setup / Start Modal -->
+  <div id="setupModal" class="modal" aria-hidden="false" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel setup" role="document">
+      <header class="modal-header">
+        <h2 id="setupTitle">Get Ready</h2>
+        <small class="muted">Pick a song, set difficulty, generate a chart, then start.</small>
+      </header>
+      <div class="modal-body setup-body">
+        <div class="form-row">
+          <label>Choose MP3/WAV</label>
+          <label class="file-upload wide">
+            <input type="file" id="setupFile" accept="audio/*">
+            <span id="setupFileLabel">Select audio file…</span>
+          </label>
+          <div id="setupSongName" class="song-name" title=""></div>
+          <small class="muted">We’ll analyze your song to create a note chart.</small>
+        </div>
+        <div class="form-row two-col">
+          <div class="col">
+            <label for="setupDifficulty">Difficulty</label>
+            <select id="setupDifficulty" class="select">
+              <option value="veryeasy">Very Easy</option>
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div class="col align-end">
+            <label>&nbsp;</label>
+            <button id="setupGenerate" class="btn">Generate Chart</button>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="setupOpenSettings" class="btn">Settings</button>
+        <button id="setupStart" class="btn primary" disabled>Start</button>
+      </footer>
+    </div>
+  </div>
+
   <script src="assets/js/rg.js"></script>
   <script src="assets/js/constants.js"></script>
   <script src="assets/js/difficulty.js"></script>
@@ -173,3 +239,4 @@
   <script src="assets/js/game.js"></script>
   <script src="assets/js/input.js"></script>
   <script src="assets/js/main.js"></script>
+  <script src="assets/js/setup.js"></script>
