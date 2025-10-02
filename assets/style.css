@@ -583,6 +583,10 @@ footer {
   inset: 0;
   z-index: 50;
 }
+/* Ensure Settings modal overlays the startup (setup) modal */
+#settingsModal {
+  z-index: 60;
+}
 .modal-backdrop {
   position: absolute;
   inset: 0;
