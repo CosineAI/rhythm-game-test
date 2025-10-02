@@ -2,12 +2,14 @@
   const { statusEl, audioEl, playChartBtn, fileInput } = window.RG.Dom;
   const { measure, clearNotes } = window.RG.State;
 
-  function resetForNewRun(state, { keepChart = true } = {}) {
+  function resetForNewRun(state, { keepChart = true, keepSelectedFile = keepChart } = {}) {
     const prevChart = keepChart ? state.precomputedChart : null;
+    const prevFile = keepSelectedFile ? state._selectedFile : null;
     clearNotes(state);
     window.RG.State.state = Object.assign(window.RG.State.resetState(), {});
     const st = window.RG.State.state;
     st.precomputedChart = prevChart;
+    st._selectedFile = prevFile;
     measure(st);
     if (window.RG.Score && window.RG.Score.reset) window.RG.Score.reset(st);
     return st;

@@ -201,10 +201,11 @@
         let s = window.RG.State.state;
         // Ensure we have a chart and file to replay
         if (s && s.precomputedChart && s._selectedFile) {
-          // Fresh run: reset state and score while keeping the chart
-          s = window.RG.Game.resetForNewRun(s, { keepChart: true });
+          const file = s._selectedFile; // cache before reset
+          // Fresh run: reset state and score while keeping the chart and file
+          s = window.RG.Game.resetForNewRun(s, { keepChart: true, keepSelectedFile: true });
           await window.RG.UI.countdownThen(s, async () => {
-            await window.RG.Game.startChartPlayback(s, s._selectedFile);
+            await window.RG.Game.startChartPlayback(s, file);
           });
         } else {
           // Fallback: open setup if we can't replay
