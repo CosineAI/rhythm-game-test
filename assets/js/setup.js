@@ -113,7 +113,28 @@
     // Setup modal: open Settings
     if (setupOpenSettings) {
       setupOpenSettings.addEventListener('click', () => {
+        const { settingsModal } = window.RG.Dom;
+        if (!settingsModal) return;
+        // Flag sliding mode
+        window.RG.Settings._slideWithSetup = true;
+        // Use stacked mode to hide settings backdrop
+        settingsModal.classList.add('slide-stacked');
         window.RG.Settings.openModal();
+
+        const settingsPanel = settingsModal.querySelector('.modal-panel');
+        const setupPanel = setupModal ? setupModal.querySelector('.modal-panel.setup') : null;
+
+        if (settingsPanel && setupPanel) {
+          // Prepare classes
+          setupPanel.classList.remove('slide-in-left');
+          // Force reflow
+          void setupPanel.offsetWidth;
+          // Animate: setup out left, settings in right
+          setupPanel.classList.add('slide-out-left');
+          // Force reflow for settings
+          void settingsPanel.offsetWidth;
+          settingsPanel.classList.add('slide-in-right');
+        }
       });
     }
 

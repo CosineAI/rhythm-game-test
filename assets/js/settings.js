@@ -156,6 +156,38 @@
   function closeModal() {
     const { settingsModal } = window.RG.Dom;
     if (!settingsModal) return;
+
+    // If invoked via setup modal slide transition, animate out then hide
+    if (window.RG.Settings && window.RG.Settings._slideWithSetup) {
+      const settingsPanel = settingsModal.querySelector('.modal-panel');
+      const setupModal = document.getElementById('setupModal');
+      const setupPanel = setupModal ? setupModal.querySelector('.modal-panel.setup') : null;
+
+      if (settingsPanel && setupPanel) {
+        // Reverse animation: settings out right, setup back in
+        settingsPanel.classList.remove('slide-in-right');
+        settingsPanel.classList.add('slide-out-right');
+        setupPanel.classList.remove('slide-out-left');
+        // force reflow to ensure transition
+        void setupPanel.offsetWidth;
+        setupPanel.classList.add('slide-in-left');
+
+        const onDone = () => {
+          settingsPanel.removeEventListener('transitionend', onDone);
+          settingsModal.classList.add('hidden');
+          settingsModal.setAttribute('aria-hidden', 'true');
+          settingsModal.classList.remove('slide-stacked');
+          settingsPanel.classList.remove('slide-out-right');
+          setupPanel.classList.remove('slide-in-left');
+          // clear flag
+          window.RG.Settings._slideWithSetup = false;
+        };
+        settingsPanel.addEventListener('transitionend', onDone);
+        return;
+      }
+    }
+
+    // Default immediate close
     settingsModal.classList.add('hidden');
     settingsModal.setAttribute('aria-hidden', 'true');
   }

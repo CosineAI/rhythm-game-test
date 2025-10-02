@@ -603,6 +603,33 @@ footer {
   border: 1px solid #1b2335;
   border-radius: 10px;
   box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 0 60px rgba(90, 120, 200, 0.08);
+  transition: transform 300ms ease, opacity 300ms ease;
+}
+
+/* Sliding coordination between Setup and Settings */
+#settingsModal.slide-stacked .modal-backdrop {
+  display: none;
+}
+/* Default offscreen position for settings panel when stacked */
+#settingsModal.slide-stacked .modal-panel {
+  transform: translate(calc(-50% + 40%), -54%);
+  opacity: 0;
+}
+#settingsModal.slide-stacked .modal-panel.slide-in-right {
+  transform: translate(-50%, -54%);
+  opacity: 1;
+}
+#settingsModal.slide-stacked .modal-panel.slide-out-right {
+  transform: translate(calc(-50% + 40%), -54%);
+  opacity: 0;
+}
+#setupModal .modal-panel.setup.slide-out-left {
+  transform: translate(calc(-50% - 40%), -54%);
+  opacity: 0.6;
+}
+#setupModal .modal-panel.setup.slide-in-left {
+  transform: translate(-50%, -54%);
+  opacity: 1;
 }
 .modal-header {
   padding: 14px 16px 8px;
