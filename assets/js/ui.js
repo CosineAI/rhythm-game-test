@@ -211,8 +211,8 @@
       resultsNewSong.addEventListener('click', () => {
         close();
         const s = window.RG.State.state;
-        // Hard stop and clear chart/file references
-        try { window.RG.Game.endGame(s); } catch {}
+        // Hard stop and clear chart/file references without showing results again
+        try { window.RG.Game.endGame(s, { showResults: false }); } catch {}
         if (s) {
           s.precomputedChart = null;
           s._selectedFile = null;

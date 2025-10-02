@@ -165,7 +165,7 @@
       pausePlayBtn.addEventListener('click', async () => {
         const state = window.RG.State.state;
         if (state.running) {
-          window.RG.Game.endGame(state);
+          window.RG.Game.endGame(state, { showResults: false });
         } else {
           // If we have a precomputed chart and (optionally) a remembered file via setup modal, start it
           // Otherwise open setup

@@ -143,7 +143,9 @@
     }
   }
 
-  function endGame(state) {
+  function endGame(state, opts = {}) {
+    const showResults = opts.showResults !== false;
+
     state.running = false;
     state.ended = true;
     cancelAnimationFrame(state.raf);
@@ -161,8 +163,8 @@
         try { state.mediaNode.disconnect(); } catch {}
       }
       statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
-      // Show results after finishing a song (file/chart modes)
-      if (window.RG.UI && window.RG.UI.showResults) {
+      // Show results after finishing a song (file/chart modes) unless suppressed
+      if (showResults && window.RG.UI && window.RG.UI.showResults) {
         window.RG.UI.showResults(state);
       }
     } else {
