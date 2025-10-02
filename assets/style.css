@@ -767,6 +767,13 @@ footer {
   padding: 14px 18px 16px;
   border-top: 1px solid rgba(120, 160, 255, 0.18);
   gap: 12px;
+  justify-content: space-between; /* Settings on left, Start on right */
+}
+
+/* Match Start button radius and thickness for Settings button */
+.modal-panel.setup #setupOpenSettings {
+  border-radius: 12px;
+  border-width: 2px;
 }
 
 /* Slight emphasis tweaks for controls within setup */
