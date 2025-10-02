@@ -2,16 +2,13 @@
   const { FFT_SIZE } = window.RG.Const;
   const { statusEl, audioEl } = window.RG.Dom;
 
-  async function setupLiveAudio(state) {
-    // Ensure single persistent AudioContext
+  async function ensureCtx(state) {
     if (!state.audioCtx) {
       state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (state.audioCtx.state === 'suspended') {
       await state.audioCtx.resume();
     }
-
-    // Build analyser once
     if (!state.analyser) {
       state.analyser = state.audioCtx.createAnalyser();
       state.analyser.fftSize = FFT_SIZE;
@@ -21,6 +18,10 @@
       state.scratchFreq = new Float32Array(state.analyser.frequencyBinCount);
       state.prevAmp = new Float32Array(state.analyser.frequencyBinCount);
     }
+  }
+
+  async function setupLiveAudio(state) {
+    await ensureCtx(state);
 
     // Disconnect media node if previously connected
     if (state.mediaNode) {
@@ -42,27 +43,11 @@
 
     state.source = source;
     state.micStream = stream;
+    state.playbackDelayMs = 0;
   }
 
   async function setupFileAudio(state, file) {
-    // Ensure single persistent AudioContext
-    if (!state.audioCtx) {
-      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (state.audioCtx.state === 'suspended') {
-      await state.audioCtx.resume();
-    }
-
-    // Build analyser once (even if not used during precomputed playback, harmless)
-    if (!state.analyser) {
-      state.analyser = state.audioCtx.createAnalyser();
-      state.analyser.fftSize = FFT_SIZE;
-      state.analyser.smoothingTimeConstant = 0.0;
-      state.analyser.minDecibels = -100;
-      state.analyser.maxDecibels = -10;
-      state.scratchFreq = new Float32Array(state.analyser.frequencyBinCount);
-      state.prevAmp = new Float32Array(state.analyser.frequencyBinCount);
-    }
+    await ensureCtx(state);
 
     // Disconnect mic source if previously connected
     if (state.source) {
@@ -106,27 +91,12 @@
         resolve();
       }
     });
+
+    state.playbackDelayMs = 0;
   }
 
   async function setupYouTubeAudio(state) {
-    // Ensure single persistent AudioContext
-    if (!state.audioCtx) {
-      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (state.audioCtx.state === 'suspended') {
-      await state.audioCtx.resume();
-    }
-
-    // Build analyser once
-    if (!state.analyser) {
-      state.analyser = state.audioCtx.createAnalyser();
-      state.analyser.fftSize = FFT_SIZE;
-      state.analyser.smoothingTimeConstant = 0.0;
-      state.analyser.minDecibels = -100;
-      state.analyser.maxDecibels = -10;
-      state.scratchFreq = new Float32Array(state.analyser.frequencyBinCount);
-      state.prevAmp = new Float32Array(state.analyser.frequencyBinCount);
-    }
+    await ensureCtx(state);
 
     // Disconnect previous sources (mic/file)
     if (state.source) {
@@ -160,7 +130,70 @@
 
     state.source = source;
     state.captureStream = stream;
+    state.playbackDelayMs = 0; // using visual-only lag in youtube mode
   }
 
-  window.RG.Audio = { setupLiveAudio, setupFileAudio, setupYouTubeAudio };
+  async function setupCapturedTabWithDelay(state, delaySec) {
+    await ensureCtx(state);
+
+    // Cleanup any previous graph
+    if (state.source) {
+      try { state.source.disconnect(); } catch {}
+      state.source = null;
+    }
+    if (state.mediaNode) {
+      try { state.mediaNode.disconnect(); } catch {}
+    }
+    if (state.captureStream) {
+      try { state.captureStream.getTracks().forEach(t => t.stop()); } catch {}
+      state.captureStream = null;
+    }
+    if (state.delayNode) {
+      try { state.delayNode.disconnect(); } catch {}
+      state.delayNode = null;
+    }
+
+    const dSec = Math.max(0, Math.min(10, Number(delaySec) || 0));
+    if (statusEl) statusEl.textContent = 'Select the YouTube tab or window, enable audio sharing. Local playback of that tab may be muted by the browser.';
+
+    // Capture ANY tab/window/screen (user selects the YouTube tab)
+    const constraints = {
+      video: true,
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        // Some Chromium versions support suppressing local playback of the captured tab
+        // This is non-standard; wrap in try/catch via applyConstraints if needed later.
+        // suppressLocalAudioPlayback: true
+      }
+    };
+    const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
+
+    // Try to suppress local playback of the captured tab if the browser supports it
+    try {
+      const aTracks = stream.getAudioTracks();
+      await Promise.all(aTracks.map(t => t.applyConstraints ? t.applyConstraints({ suppressLocalAudioPlayback: true }) : null));
+    } catch {}
+
+    // Source -> Delay -> [Analyser, Destination]
+    const source = state.audioCtx.createMediaStreamSource(stream);
+
+    const maxDelay = 12.0;
+    const delay = state.audioCtx.createDelay(maxDelay);
+    delay.delayTime.value = dSec;
+
+    source.connect(delay);
+    delay.connect(state.analyser);
+    delay.connect(state.audioCtx.destination);
+
+    state.source = source;
+    state.captureStream = stream;
+    state.delayNode = delay;
+
+    // Since analyser sees the delayed audio, we don't need extra visual delay beyond user offset.
+    state.playbackDelayMs = Math.max(0, 0);
+  }
+
+  window.RG.Audio = { setupLiveAudio, setupFileAudio, setupYouTubeAudio, setupCapturedTabWithDelay };
 })();

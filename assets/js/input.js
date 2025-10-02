@@ -7,7 +7,9 @@
     playChartBtn,
     statusEl,
     youtubeUrlInput,
-    youtubeLoadBtn
+    youtubeLoadBtn,
+    captureDelaySec,
+    captureTabBtn
   } = window.RG.Dom;
 
   function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -179,6 +181,18 @@
           }
         });
       }
+    }
+
+    if (captureTabBtn) {
+      captureTabBtn.addEventListener('click', async () => {
+        const state = window.RG.State.state;
+        if (state.running) {
+          window.RG.Game.endGame(state);
+          return;
+        }
+        const d = captureDelaySec ? Number(captureDelaySec.value) : 3.0;
+        await window.RG.Game.startCaptureDelayMode(state, d);
+      });
     }
   }
 

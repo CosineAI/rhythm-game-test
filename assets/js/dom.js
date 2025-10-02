@@ -23,6 +23,10 @@
   const youtubeLoadBtn = $('#youtubeLoadBtn');
   const youtubePlayerContainer = $('#youtubePlayer');
 
+  // Capture (delayed) controls
+  const captureDelaySec = $('#captureDelaySec');
+  const captureTabBtn = $('#captureTabBtn');
+
   const gridlinesContainer = $('#gridlines');
 
   const comboEl = $('#combo');
@@ -70,6 +74,9 @@
     youtubeUrlInput,
     youtubeLoadBtn,
     youtubePlayerContainer,
+    // Capture delayed
+    captureDelaySec,
+    captureTabBtn,
     gridlinesContainer,
     comboEl,
     comboValueEl,

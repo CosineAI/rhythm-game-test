@@ -61,7 +61,13 @@
     const speed = SPEED * speedMult;
     const travelTimeMs = (travelDist / speed) * 1000;
     const userOffsetMs = (window.RG.Settings && window.RG.Settings.getInputOffsetMs()) || 0;
-    const hitPerfMs = state.startAt + ((onsetTimeSec - state.audioBaseTime) * 1000) + window.RG.Const.ANALYSIS_DELAY_MS + userOffsetMs;
+    const analysisDelayMs = (state && typeof state.analysisVisualDelayMs === 'number')
+      ? state.analysisVisualDelayMs
+      : window.RG.Const.ANALYSIS_DELAY_MS;
+    const extraPlaybackDelay = (state && typeof state.playbackDelayMs === 'number') ? state.playbackDelayMs : 0;
+
+    // Convert analyser onset time to perf.now() aligned ms, then add any visual delay and user offsets
+    const hitPerfMs = state.startAt + ((onsetTimeSec - state.audioBaseTime) * 1000) + analysisDelayMs + extraPlaybackDelay + userOffsetMs;
     const spawnRelMs = hitPerfMs - travelTimeMs - state.startAt;
 
     const def = { t: spawnRelMs, lane };
