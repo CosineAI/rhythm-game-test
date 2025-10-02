@@ -691,8 +691,18 @@ footer {
 }
 
 /* Setup modal polish */
+.modal-panel.setup {
+  /* Slightly brighter, more contrasted card */
+  background: linear-gradient(180deg, #101634, #0e142b);
+  border: 1px solid #2a3a6a;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.65),
+    inset 0 0 80px rgba(100, 140, 255, 0.08),
+    0 0 0 1px rgba(130, 170, 255, 0.06);
+}
 .modal-panel.setup .modal-header {
-  padding-bottom: 10px;
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid rgba(120, 160, 255, 0.18);
 }
 .modal-panel.setup .modal-header h2 {
   font-size: 18px;
@@ -700,20 +710,47 @@ footer {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  letter-spacing: 0.6px;
+}
+.modal-panel.setup .modal-header .muted {
+  display: block;
+  margin-top: 4px;
+  color: #9fb3d9;
+  opacity: 0.9;
+}
+.modal-panel.setup .modal-body {
+  padding: 16px 18px 8px;
+}
+.setup-body {
+  display: grid;
+  gap: 16px;
+}
+.setup-body .form-row {
+  display: grid;
+  gap: 10px;
 }
 .setup-body .file-upload.wide {
   width: 100%;
   justify-content: center;
   text-align: center;
-  padding: 12px 14px;
+  padding: 14px 16px;
+  border-color: #2c3e72;
+  background: linear-gradient(180deg, #121a36, #0e152e);
+  transition: filter 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.setup-body .file-upload.wide:hover {
+  filter: brightness(1.06);
+  border-color: #395296;
+  background: linear-gradient(180deg, #162047, #101939);
 }
 .setup-body .file-upload.wide span {
   font-size: 14px;
+  color: #d6e5ff;
 }
 .setup-body .two-col {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 12px;
+  gap: 14px;
   align-items: end;
 }
 .setup-body .two-col .col.align-end {
@@ -722,6 +759,28 @@ footer {
 }
 .setup-body .select {
   width: 100%;
+}
+.modal-panel.setup .modal-footer {
+  padding: 14px 18px 16px;
+  border-top: 1px solid rgba(120, 160, 255, 0.18);
+  gap: 12px;
+}
+
+/* Slight emphasis tweaks for controls within setup */
+.modal-panel.setup .btn.primary {
+  background: linear-gradient(180deg, #2b4a86, #1b2e57);
+  border-color: #37579a;
+}
+.modal-panel.setup .btn {
+  background: #17233f;
+  border-color: #2a3f72;
+}
+.modal-panel.setup .select,
+.modal-panel.setup .number,
+.modal-panel.setup .keybind,
+.modal-panel.setup input[type="range"] {
+  border-color: #2a3f72;
+  background: #111a33;
 }
 
 /* Results modal styles */
