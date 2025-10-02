@@ -613,25 +613,26 @@ footer {
 #settingsModal.slide-stacked .modal-backdrop {
   display: none;
 }
-/* Default offscreen position for settings panel when stacked */
+/* Default offscreen position for settings panel when stacked (off to the right) */
 #settingsModal.slide-stacked .modal-panel {
-  transform: translate(calc(-50% + 40%), -54%);
+  transform: translate(150%, -54%);
   opacity: 0;
 }
 #settingsModal.slide-stacked .modal-panel.slide-in-right {
-  transform: translate(calc(-50% - 28%), -54%);
+  transform: translate(-50%, -54%); /* centered */
   opacity: 1;
 }
 #settingsModal.slide-stacked .modal-panel.slide-out-right {
-  transform: translate(calc(-50% + 40%), -54%);
+  transform: translate(150%, -54%); /* off to the right */
   opacity: 0;
 }
+/* Move setup panel fully offscreen to the left while settings is visible */
 #setupModal .modal-panel.setup.slide-out-left {
-  transform: translate(calc(-50% - 40%), -54%);
+  transform: translate(-200%, -54%);
   opacity: 0.6;
 }
 #setupModal .modal-panel.setup.slide-in-left {
-  transform: translate(-50%, -54%);
+  transform: translate(-50%, -54%); /* centered */
   opacity: 1;
 }
 .modal-header {
