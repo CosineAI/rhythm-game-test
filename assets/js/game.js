@@ -2,6 +2,17 @@
   const { statusEl, audioEl, playChartBtn, fileInput } = window.RG.Dom;
   const { measure, clearNotes } = window.RG.State;
 
+  function resetForNewRun(state, { keepChart = true } = {}) {
+    const prevChart = keepChart ? state.precomputedChart : null;
+    clearNotes(state);
+    window.RG.State.state = Object.assign(window.RG.State.resetState(), {});
+    const st = window.RG.State.state;
+    st.precomputedChart = prevChart;
+    measure(st);
+    if (window.RG.Score && window.RG.Score.reset) window.RG.Score.reset(st);
+    return st;
+  }
+
   async function startChartPlayback(state, file) {
     state.mode = 'chart';
 
@@ -73,15 +84,8 @@
   async function startGame(state) {
     if (state.running) return;
 
-    // Preserve any precomputed chart across reset
-    const prevChart = state.precomputedChart;
-
-    clearNotes(state);
-    window.RG.State.state = Object.assign(window.RG.State.resetState(), {});
-    state = window.RG.State.state;
-    state.precomputedChart = prevChart;
-    measure(state);
-    if (window.RG.Score && window.RG.Score.reset) window.RG.Score.reset(state);
+    // Reset to fresh run but preserve any precomputed chart
+    state = resetForNewRun(state, { keepChart: true });
 
     const file = fileInput && fileInput.files && fileInput.files[0];
     const hasChart = !!(file && state.precomputedChart && state.precomputedChart.fileName === file.name);
@@ -187,5 +191,5 @@
     state.raf = requestAnimationFrame(t => tick(state, t));
   }
 
-  window.RG.Game = { startGame, startChartPlayback, endGame, tick };
+  window.RG.Game = { startGame, startChartPlayback, endGame, tick, resetForNewRun };
 })();

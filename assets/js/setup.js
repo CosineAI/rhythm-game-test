@@ -34,6 +34,13 @@
     const d = window.RG.Settings.getDifficulty();
     if (setupDifficulty) setupDifficulty.value = d;
 
+    // Hide results modal if it happens to be open
+    const results = document.getElementById('resultsModal');
+    if (results) {
+      results.classList.add('hidden');
+      results.setAttribute('aria-hidden', 'true');
+    }
+
     setupModal.classList.remove('hidden');
     setupModal.setAttribute('aria-hidden', 'false');
   }
@@ -115,11 +122,13 @@
 
     if (setupStart) {
       setupStart.addEventListener('click', async () => {
-        const state = window.RG.State.state;
+        let state = window.RG.State.state;
         if (!selectedFile || !state.precomputedChart) {
           if (statusEl) statusEl.textContent = 'Generate a chart first.';
           return;
         }
+        // Fully reset to a fresh run (keep the computed chart)
+        state = window.RG.Game.resetForNewRun(state, { keepChart: true });
         closeSetup();
         await window.RG.UI.countdownThen(state, async () => {
           await window.RG.Game.startChartPlayback(state, selectedFile);
@@ -158,7 +167,11 @@
     // New top-level buttons
     if (newSongBtn) {
       newSongBtn.addEventListener('click', () => {
-        openSetup();
+        const state = window.RG.State.state;
+        if (state && state.running) {
+          window.RG.Game.endGame(state, { showResults: false });
+        }
+        openSetup({ reset: true });
       });
     }
     if (pausePlayBtn) {
