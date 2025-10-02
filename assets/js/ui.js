@@ -198,11 +198,19 @@
     if (resultsReplay) {
       resultsReplay.addEventListener('click', async () => {
         close();
-        const s = window.RG.State.state;
+        let s = window.RG.State.state;
+        // Ensure we have a chart and file to replay
         if (s && s.precomputedChart && s._selectedFile) {
+          // Fresh run: reset state and score while keeping the chart
+          s = window.RG.Game.resetForNewRun(s, { keepChart: true });
           await window.RG.UI.countdownThen(s, async () => {
             await window.RG.Game.startChartPlayback(s, s._selectedFile);
           });
+        } else {
+          // Fallback: open setup if we can't replay
+          if (window.RG.Setup && window.RG.Setup.open) {
+            window.RG.Setup.open({ reset: true });
+          }
         }
       }, { once: true });
     }
