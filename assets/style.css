@@ -17,6 +17,7 @@
 
 html, body {
   height: 100%;
+  overscroll-behavior: none;
 }
 
 body {
@@ -165,6 +166,7 @@ main {
   border: 1px solid #1b2335;
   border-radius: 10px;
   overflow: hidden;
+  touch-action: none;
   box-shadow: 0 20px 50px rgba(0,0,0,0.45), inset 0 0 80px rgba(45, 66, 120, 0.15);
 }
 
@@ -175,7 +177,7 @@ main {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   pointer-events: auto;
-  touch-action: manipulation;
+  touch-action: none;
   z-index: 1;
 }
 /* Three-lane layout for Very Easy difficulty */

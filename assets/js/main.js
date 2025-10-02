@@ -16,4 +16,16 @@
 
   // Wire up input handlers
   window.RG.Input.init();
+
+  // Prevent page scroll on mobile (allow interactions within modals)
+  if (navigator.maxTouchPoints > 0) {
+    const allowInModal = (el) => el && el.closest && el.closest('.modal-panel');
+    window.addEventListener('touchmove', (e) => {
+      const t = e.target;
+      if (allowInModal(t)) return;
+      const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+  }
 })();
