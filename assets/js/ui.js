@@ -209,6 +209,18 @@
     }
   }
 
+  async function countdownThen(state, fn) {
+    // Use the judgement element for a simple central countdown
+    const steps = ['3', '2', '1', 'Start!'];
+    for (let i = 0; i < steps.length; i++) {
+      flash(steps[i], i < steps.length - 1 ? 'good' : 'perfect');
+      await new Promise(r => setTimeout(r, i < steps.length - 1 ? 800 : 600));
+    }
+    // Clear
+    if (judgementEl) judgementEl.className = 'judgement';
+    await fn();
+  }
+
   window.RG.UI = {
     flash,
     triggerGlow,
@@ -220,6 +232,7 @@
     comboMiss,
     applyKeyLayout,
     refreshKeycapLabels,
-    showResults
+    showResults,
+    countdownThen
   };
 })();

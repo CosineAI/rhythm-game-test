@@ -47,6 +47,13 @@
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
 
+  // Setup modal elements
+  const setupModal = $('#setupModal');
+  const setupFile = $('#setupFile');
+  const setupDifficulty = $('#setupDifficulty');
+  const setupGenerate = $('#setupGenerate');
+  const setupStart = $('#setupStart');
+
   // Results modal elements
   const resultsModal = $('#resultsModal');
   const resultsClose = $('#resultsClose');
@@ -104,6 +111,11 @@
     resultOkay,
     resultBad,
     resultMaxCombo,
-    resultTotalScore
+    resultTotalScore,
+    setupModal,
+    setupFile,
+    setupDifficulty,
+    setupGenerate,
+    setupStart
   };
 })();
