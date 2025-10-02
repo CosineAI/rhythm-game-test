@@ -174,7 +174,8 @@ main {
   inset: 0;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: manipulation;
   z-index: 1;
 }
 /* Three-lane layout for Very Easy difficulty */
@@ -256,6 +257,7 @@ main {
     inset 0 2px 0 rgba(255,255,255,0.08);
   transform: translateZ(0);
   z-index: 2;
+  pointer-events: none;
 }
 .note.white { background: linear-gradient(180deg, var(--white-note), #5dc3f5); }
 .note.black { background: linear-gradient(180deg, var(--black-note), #a78bfa); }

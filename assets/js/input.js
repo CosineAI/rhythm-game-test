@@ -72,6 +72,34 @@
       }
     });
 
+    // Pointer/touch support: allow tapping lanes to hit notes (mobile-friendly)
+    const { lanes } = window.RG.Dom;
+    if (lanes && lanes.length) {
+      lanes.forEach((laneEl, lane) => {
+        if (!laneEl) return;
+
+        const onDown = (e) => {
+          const active = window.RG.Difficulty.getActiveLaneIndices();
+          if (!active.includes(lane)) return;
+          e.preventDefault();
+          const state = window.RG.State.state;
+          const cap = keycapByLane && keycapByLane[lane];
+          if (cap) cap.classList.add('active');
+          hitLane(state, lane);
+          try { if (laneEl.setPointerCapture) laneEl.setPointerCapture(e.pointerId); } catch {}
+        };
+        const onUp = () => {
+          const cap = keycapByLane && keycapByLane[lane];
+          if (cap) cap.classList.remove('active');
+        };
+
+        laneEl.addEventListener('pointerdown', onDown);
+        laneEl.addEventListener('pointerup', onUp);
+        laneEl.addEventListener('pointercancel', onUp);
+        laneEl.addEventListener('pointerleave', onUp);
+      });
+    }
+
     if (fileInput) {
       fileInput.addEventListener('change', () => {
         const state = window.RG.State.state;
