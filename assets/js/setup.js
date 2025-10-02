@@ -16,7 +16,19 @@
 
   let selectedFile = null;
 
-  function openSetup() {
+  function openSetup(opts = {}) {
+    const state = window.RG.State.state;
+    if (opts.reset) {
+      selectedFile = null;
+      if (state) {
+        state.precomputedChart = null;
+        state._selectedFile = null;
+      }
+      if (setupFile) setupFile.value = '';
+      if (setupFileLabel) setupFileLabel.textContent = 'Select audio file…';
+      if (setupStart) setupStart.disabled = true;
+    }
+
     if (!setupModal) return;
     // Prefill difficulty from settings
     const d = window.RG.Settings.getDifficulty();
@@ -41,6 +53,8 @@
     if (setupStart) setupStart.disabled = true;
     try {
       await window.RG.Chart.precomputeChartFromFile(state, selectedFile);
+      // Remember selection on state for replay
+      state._selectedFile = selectedFile;
       if (statusEl) {
         const diff = window.RG.Difficulty.getDifficultyParams().name;
         statusEl.textContent = `Chart ready: ${selectedFile.name} — ${diff} (${state.precomputedChart && state.precomputedChart.notes ? state.precomputedChart.notes.length : 0} notes).`;
@@ -60,7 +74,10 @@
         selectedFile = f || null;
         // Invalidate previous chart on file change
         const state = window.RG.State.state;
-        if (state) state.precomputedChart = null;
+        if (state) {
+          state.precomputedChart = null;
+          state._selectedFile = selectedFile || null;
+        }
         if (setupStart) setupStart.disabled = true;
 
         if (setupFileLabel) {
@@ -152,9 +169,10 @@
         } else {
           // If we have a precomputed chart and (optionally) a remembered file via setup modal, start it
           // Otherwise open setup
-          if (state.precomputedChart && selectedFile) {
+          if (state.precomputedChart && (selectedFile || state._selectedFile)) {
+            const file = selectedFile || state._selectedFile;
             await window.RG.UI.countdownThen(state, async () => {
-              await window.RG.Game.startChartPlayback(state, selectedFile);
+              await window.RG.Game.startChartPlayback(state, file);
             });
           } else {
             openSetup();
@@ -177,6 +195,11 @@
       });
     }
   }
+
+  // Expose open so results modal can navigate here
+  window.RG.Setup = {
+    open: openSetup
+  };
 
   // Initialize setup once everything else is ready
   if (document.readyState === 'loading') {

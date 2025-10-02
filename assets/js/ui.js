@@ -10,8 +10,8 @@
     comboValueEl,
     comboToastEl,
     resultsModal,
-    resultsClose,
-    resultsRestart,
+    resultsReplay,
+    resultsNewSong,
     resultPerfect,
     resultGood,
     resultOkay,
@@ -187,24 +187,43 @@
     resultsModal.classList.remove('hidden');
     resultsModal.setAttribute('aria-hidden', 'false');
 
-    // Close handlers
+    // Handlers
+    const backdrop = resultsModal.querySelector('.modal-backdrop');
     function close() {
       resultsModal.classList.add('hidden');
       resultsModal.setAttribute('aria-hidden', 'true');
     }
-    const backdrop = resultsModal.querySelector('.modal-backdrop');
-    if (backdrop) {
-      backdrop.addEventListener('click', close, { once: true });
-    }
-    if (resultsClose) {
-      resultsClose.addEventListener('click', close, { once: true });
-    }
-    if (resultsRestart) {
-      resultsRestart.addEventListener('click', () => {
+    if (backdrop) backdrop.addEventListener('click', close, { once: true });
+
+    if (resultsReplay) {
+      resultsReplay.addEventListener('click', async () => {
         close();
         const s = window.RG.State.state;
-        // Start chart or file mode again if applicable; else live
-        window.RG.Game.startGame(s);
+        if (s && s.precomputedChart && s._selectedFile) {
+          await window.RG.UI.countdownThen(s, async () => {
+            await window.RG.Game.startChartPlayback(s, s._selectedFile);
+          });
+        }
+      }, { once: true });
+    }
+
+    if (resultsNewSong) {
+      resultsNewSong.addEventListener('click', () => {
+        close();
+        const s = window.RG.State.state;
+        // Hard stop and clear chart/file references
+        try { window.RG.Game.endGame(s); } catch {}
+        if (s) {
+          s.precomputedChart = null;
+          s._selectedFile = null;
+        }
+        // Open setup modal
+        if (window.RG.Setup && window.RG.Setup.open) {
+          window.RG.Setup.open({ reset: true });
+        } else {
+          const btn = document.getElementById('newSongBtn');
+          if (btn) btn.click();
+        }
       }, { once: true });
     }
   }

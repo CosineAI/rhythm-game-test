@@ -61,8 +61,8 @@
 
   // Results modal elements
   const resultsModal = $('#resultsModal');
-  const resultsClose = $('#resultsClose');
-  const resultsRestart = $('#resultsRestart');
+  const resultsReplay = $('#resultsReplay');
+  const resultsNewSong = $('#resultsNewSong');
   const resultPerfect = $('#resultPerfect');
   const resultGood = $('#resultGood');
   const resultOkay = $('#resultOkay');
@@ -109,8 +109,8 @@
     settingsSave,
     settingsCancel,
     resultsModal,
-    resultsClose,
-    resultsRestart,
+    resultsReplay,
+    resultsNewSong,
     resultPerfect,
     resultGood,
     resultOkay,
