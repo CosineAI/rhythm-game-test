@@ -5,6 +5,8 @@
   function resetState() {
     return {
       running: false,
+      paused: false,
+      pauseStartTs: 0,
       ended: false,
       startAt: 0,
       lastTs: 0,

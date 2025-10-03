@@ -47,6 +47,26 @@
     }, { once: true });
   }
 
+  // Green fire along the hit line that scales with combo
+  function updateHitLineFire(state) {
+    const fireEl = document.getElementById('hitFire');
+    if (!fireEl) return;
+    const c = state.combo || 0;
+    let h = 0, op = 0, blur = '0px', dur = '900ms';
+    // Slightly shorter heights for a tighter flame
+    if (c >= 200) { h = 176; op = 0.95; blur = '3.2px'; dur = '600ms'; }
+    else if (c >= 150) { h = 152; op = 0.90; blur = '3.0px'; dur = '640ms'; }
+    else if (c >= 100) { h = 128; op = 0.85; blur = '2.8px'; dur = '700ms'; }
+    else if (c >= 50)  { h = 100; op = 0.78; blur = '2.6px'; dur = '760ms'; }
+    else if (c >= 20)  { h = 75;  op = 0.68; blur = '2.4px'; dur = '820ms'; }
+    else if (c >= 10)  { h = 50;  op = 0.58; blur = '2.2px'; dur = '860ms'; }
+    else { h = 0; op = 0; blur = '0px'; dur = '900ms'; }
+    fireEl.style.setProperty('--fire-h', h + 'px');
+    fireEl.style.setProperty('--fire-opacity', String(op));
+    fireEl.style.setProperty('--fire-blur', blur);
+    fireEl.style.setProperty('--fire-flicker', dur);
+  }
+
   // Combo system
   function comboBurst(state) {
     if (!playfield) return;
@@ -122,6 +142,8 @@
       // Pre-10: keep value in sync (not visible yet)
       updateComboUI(state);
     }
+    // Update hit-line fire intensity
+    updateHitLineFire(state);
   }
 
   function comboMiss(state) {
@@ -134,6 +156,8 @@
       clearTimeout(comboToastEl._t);
     }
     state.combo = 0;
+    // Reset hit-line fire
+    updateHitLineFire(state);
   }
 
   function applyKeyLayout() {
@@ -253,6 +277,7 @@
     flash,
     triggerGlow,
     screenShake,
+    updateHitLineFire,
     comboBurst,
     flashComboCount,
     updateComboUI,

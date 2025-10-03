@@ -7,7 +7,9 @@
     setupStart,
     setupOpenSettings,
     newSongBtn,
-    pausePlayBtn,
+    pauseBtn,
+    playBtn,
+    restartBtn,
     statusEl,
     setupSongName
   } = window.RG.Dom;
@@ -186,22 +188,41 @@
         openSetup({ reset: true });
       });
     }
-    if (pausePlayBtn) {
-      pausePlayBtn.addEventListener('click', async () => {
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', () => {
         const state = window.RG.State.state;
-        if (state.running) {
-          window.RG.Game.endGame(state, { showResults: false });
+        if (state && state.running) {
+          window.RG.Game.pause(state);
+        }
+      });
+    }
+    if (playBtn) {
+      playBtn.addEventListener('click', async () => {
+        const state = window.RG.State.state;
+        if (state && state.paused) {
+          await window.RG.Game.resume(state);
+        }
+      });
+    }
+    if (restartBtn) {
+      restartBtn.addEventListener('click', async () => {
+        let state = window.RG.State.state;
+        const file = selectedFile || state._selectedFile || (window.RG.Dom.fileInput && window.RG.Dom.fileInput.files && window.RG.Dom.fileInput.files[0]);
+        if (!file) {
+          openSetup();
+          return;
+        }
+        // Reset to fresh run keeping chart if available
+        state = window.RG.Game.resetForNewRun(state, { keepChart: true, keepSelectedFile: true });
+        // If chart exists for this file, play chart; otherwise start game in file/live mode
+        if (state.precomputedChart && state.precomputedChart.fileName === file.name) {
+          await window.RG.UI.countdownThen(state, async () => {
+            await window.RG.Game.startChartPlayback(state, file);
+          });
         } else {
-          // If we have a precomputed chart and (optionally) a remembered file via setup modal, start it
-          // Otherwise open setup
-          if (state.precomputedChart && (selectedFile || state._selectedFile)) {
-            const file = selectedFile || state._selectedFile;
-            await window.RG.UI.countdownThen(state, async () => {
-              await window.RG.Game.startChartPlayback(state, file);
-            });
-          } else {
-            openSetup();
-          }
+          await window.RG.UI.countdownThen(state, async () => {
+            await window.RG.Game.startGame(state);
+          });
         }
       });
     }

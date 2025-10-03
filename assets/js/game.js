@@ -65,7 +65,7 @@
       await audioEl.play();
     } catch (err) {
       console.error('Playback error:', err);
-      statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+      statusEl.textContent = 'Playback blocked. Click the page and press Play again.';
       return;
     }
 
@@ -73,6 +73,7 @@
     state.audioBaseTime = state.audioCtx.currentTime;
 
     state.running = true;
+    state.paused = false;
     state.ended = false;
     const bpmText = chart.bpm ? ` • ~${Math.round(chart.bpm)} BPM` : '';
     statusEl.textContent = `Chart mode: playing ${file.name} — ${chart.difficulty || 'Normal'} (${chart.notes.length} notes${bpmText})`;
@@ -112,13 +113,14 @@
         await audioEl.play();
       } catch (err) {
         console.error('Playback error:', err);
-        statusEl.textContent = 'Playback blocked. Click the page and press Space again.';
+        statusEl.textContent = 'Playback blocked. Click the page and press Play again.';
         return;
       }
 
       state.startAt = performance.now();
       state.audioBaseTime = state.audioCtx.currentTime;
       state.running = true;
+      state.paused = false;
       state.ended = false;
       statusEl.textContent = `File mode (live analysis): ${file.name} (delay ${window.RG.Const.ANALYSIS_DELAY_MS} ms)`;
 
@@ -141,6 +143,7 @@
       state.audioBaseTime = state.audioCtx.currentTime;
 
       state.running = true;
+      state.paused = false;
       state.ended = false;
       statusEl.textContent = `Live mode: listening (delay ${window.RG.Const.ANALYSIS_DELAY_MS} ms)… clap, snap, or play music nearby`;
 
@@ -153,6 +156,7 @@
     const showResults = opts.showResults !== false;
 
     state.running = false;
+    state.paused = false;
     state.ended = true;
     cancelAnimationFrame(state.raf);
     clearInterval(state.analysisTimer);
@@ -168,7 +172,7 @@
       if (state.mediaNode) {
         try { state.mediaNode.disconnect(); } catch {}
       }
-      statusEl.textContent = 'Stopped — press Space to start (file/chart mode or mic if no file)';
+      statusEl.textContent = 'Stopped — use New Song to choose a track or Play to start.';
       // Show results after finishing a song (file/chart modes) unless suppressed
       if (showResults && window.RG.UI && window.RG.UI.showResults) {
         window.RG.UI.showResults(state);
@@ -177,12 +181,60 @@
       if (state.micStream) {
         state.micStream.getTracks().forEach(t => t.stop());
       }
-      statusEl.textContent = 'Stopped — press Space to start live mode again';
+      statusEl.textContent = 'Stopped — use Play to start live mode again';
     }
 
     if (state.audioCtx) {
       state.audioCtx.suspend().catch(()=>{});
     }
+  }
+
+  function pause(state) {
+    if (!state.running || state.paused) return;
+    state.pauseStartTs = performance.now();
+    state.running = false;
+    state.paused = true;
+    cancelAnimationFrame(state.raf);
+    clearInterval(state.analysisTimer);
+    state.analysisTimer = 0;
+    try { audioEl.pause(); } catch {}
+    if (state.audioCtx) {
+      try { state.audioCtx.suspend(); } catch {}
+    }
+    statusEl.textContent = 'Paused — press Play to resume.';
+  }
+
+  async function resume(state) {
+    if (state.running || !state.paused) return;
+    const now = performance.now();
+    const dt = Math.max(0, now - (state.pauseStartTs || now));
+    // Shift timeline to account for paused duration
+    state.startAt += dt;
+    for (const n of state.notes) {
+      if (n && typeof n.spawnAt === 'number') n.spawnAt += dt;
+    }
+    for (const b of state.beatLines) {
+      if (b && typeof b.spawnAt === 'number') b.spawnAt += dt;
+    }
+
+    try {
+      if (state.audioCtx) await state.audioCtx.resume();
+      await audioEl.play();
+    } catch (err) {
+      console.error('Resume playback error:', err);
+      statusEl.textContent = 'Playback blocked. Click the page and press Play again.';
+      return;
+    }
+
+    state.running = true;
+    state.paused = false;
+
+    if (state.mode === 'file' || state.mode === 'live') {
+      state.analysisTimer = setInterval(() => window.RG.Analysis.analyzeStep(state), window.RG.Const.ANALYSIS_HOP_MS);
+    }
+
+    statusEl.textContent = 'Playing';
+    state.raf = requestAnimationFrame(ts => tick(state, ts));
   }
 
   function tick(state, ts) {
@@ -193,5 +245,5 @@
     state.raf = requestAnimationFrame(t => tick(state, t));
   }
 
-  window.RG.Game = { startGame, startChartPlayback, endGame, tick, resetForNewRun };
+  window.RG.Game = { startGame, startChartPlayback, endGame, pause, resume, tick, resetForNewRun };
 })();

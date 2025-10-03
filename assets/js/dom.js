@@ -23,6 +23,7 @@
   const pausePlayBtn = $('#pausePlayBtn');
 
   const gridlinesContainer = $('#gridlines');
+  const hitLine = $('#hitLine');
 
   const comboEl = $('#combo');
   const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
@@ -86,6 +87,7 @@
     playChartBtn,
     difficultySelect,
     gridlinesContainer,
+    hitLine,
     comboEl,
     comboValueEl,
     comboToastEl,

@@ -17,6 +17,7 @@
 
 html, body {
   height: 100%;
+  overscroll-behavior: none;
 }
 
 body {
@@ -165,6 +166,7 @@ main {
   border: 1px solid #1b2335;
   border-radius: 10px;
   overflow: hidden;
+  touch-action: none;
   box-shadow: 0 20px 50px rgba(0,0,0,0.45), inset 0 0 80px rgba(45, 66, 120, 0.15);
 }
 
@@ -174,7 +176,8 @@ main {
   inset: 0;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
   z-index: 1;
 }
 /* Three-lane layout for Very Easy difficulty */
@@ -201,6 +204,60 @@ main {
   background: linear-gradient(90deg, transparent, rgba(144, 234, 144, 0.9), transparent);
   box-shadow: 0 0 8px rgba(144,234,144,0.6);
   z-index: 3;
+}
+
+/* Combo-reactive green fire along the hit line
+   Base glow + animated flame tongues toward the top edge */
+.hit-fire {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--keycaps-h) + 12px - 2px);
+  height: var(--fire-h, 0px);
+  opacity: var(--fire-opacity, 0);
+  background:
+    radial-gradient(80% 60% at 50% 100%, rgba(124,244,139,0.60), rgba(124,244,139,0.18) 70%, rgba(124,244,139,0.0)),
+    radial-gradient(50% 50% at 20% 100%, rgba(124,244,139,0.40), rgba(124,244,139,0.0) 70%),
+    radial-gradient(50% 50% at 80% 100%, rgba(124,244,139,0.40), rgba(124,244,139,0.0) 70%),
+    linear-gradient(180deg, rgba(124,244,139,0.35), rgba(124,244,139,0.08) 60%, rgba(124,244,139,0.0));
+  filter: blur(var(--fire-blur, 2px));
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 3; /* sit with hit-line */
+  transform-origin: center bottom;
+  animation: fireFlicker var(--fire-flicker, 900ms) ease-in-out infinite alternate;
+  will-change: transform, opacity, filter;
+}
+
+/* Flame tongues overlay to make the top edge more \"fire-like\" */
+.hit-fire::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 0;
+  height: 100%;
+  background:
+    conic-gradient(at 10% 0%, rgba(124, 244, 139, 0.50) 0 40deg, transparent 40deg 360deg),
+    conic-gradient(at 30% 0%, rgba(124, 244, 139, 0.45) 0 48deg, transparent 48deg 360deg),
+    conic-gradient(at 50% 0%, rgba(124, 244, 139, 0.50) 0 42deg, transparent 42deg 360deg),
+    conic-gradient(at 70% 0%, rgba(124, 244, 139, 0.45) 0 50deg, transparent 50deg 360deg),
+    conic-gradient(at 90% 0%, rgba(124, 244, 139, 0.50) 0 44deg, transparent 44deg 360deg);
+  mix-blend-mode: screen;
+  filter: blur(calc(var(--fire-blur, 2px) + 0.6px));
+  opacity: var(--fire-opacity, 0);
+  transform-origin: center bottom;
+  animation: fireTongues var(--fire-flicker, 900ms) ease-in-out infinite alternate;
+}
+
+@keyframes fireFlicker {
+  0%   { transform: translateY(0) scaleY(1.00); }
+  50%  { transform: translateY(-4px) scaleY(1.06); }
+  100% { transform: translateY(0) scaleY(1.00); }
+}
+
+@keyframes fireTongues {
+  0%   { transform: translateY(0) scaleY(1.00); }
+  50%  { transform: translateY(-3px) scaleY(1.04); }
+  100% { transform: translateY(0) scaleY(1.00); }
 }
 
 /* Upward green glow effect on successful hits — expands from center outward */
@@ -256,6 +313,7 @@ main {
     inset 0 2px 0 rgba(255,255,255,0.08);
   transform: translateZ(0);
   z-index: 2;
+  pointer-events: none;
 }
 .note.white { background: linear-gradient(180deg, var(--white-note), #5dc3f5); }
 .note.black { background: linear-gradient(180deg, var(--black-note), #a78bfa); }

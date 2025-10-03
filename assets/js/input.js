@@ -45,8 +45,8 @@
       const state = window.RG.State.state;
       if (key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        if (!state.running) window.RG.Game.startGame(state);
-        else window.RG.Game.endGame(state);
+        if (state.running) window.RG.Game.pause(state);
+        else if (state.paused) window.RG.Game.resume(state);
         return;
       }
       const map = (window.RG.Settings && window.RG.Settings.getKeyToLane && window.RG.Settings.getKeyToLane()) || {};
@@ -72,6 +72,34 @@
       }
     });
 
+    // Pointer/touch support: allow tapping lanes to hit notes (mobile-friendly)
+    const { lanes } = window.RG.Dom;
+    if (lanes && lanes.length) {
+      lanes.forEach((laneEl, lane) => {
+        if (!laneEl) return;
+
+        const onDown = (e) => {
+          const active = window.RG.Difficulty.getActiveLaneIndices();
+          if (!active.includes(lane)) return;
+          e.preventDefault();
+          const state = window.RG.State.state;
+          const cap = keycapByLane && keycapByLane[lane];
+          if (cap) cap.classList.add('active');
+          hitLane(state, lane);
+          try { if (laneEl.setPointerCapture) laneEl.setPointerCapture(e.pointerId); } catch {}
+        };
+        const onUp = () => {
+          const cap = keycapByLane && keycapByLane[lane];
+          if (cap) cap.classList.remove('active');
+        };
+
+        laneEl.addEventListener('pointerdown', onDown);
+        laneEl.addEventListener('pointerup', onUp);
+        laneEl.addEventListener('pointercancel', onUp);
+        laneEl.addEventListener('pointerleave', onUp);
+      });
+    }
+
     if (fileInput) {
       fileInput.addEventListener('change', () => {
         const state = window.RG.State.state;
@@ -85,9 +113,9 @@
 
         if (f) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
+          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Play for live analysis.`;
         } else {
-          statusEl.textContent = 'No file selected — Space will start microphone live mode.';
+          statusEl.textContent = 'No file selected — Play will start microphone live mode.';
         }
       });
     }
@@ -105,7 +133,7 @@
             if (playChartBtn) playChartBtn.disabled = true;
           }
           if (analyzeBtn) analyzeBtn.disabled = !f;
-          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Space for live analysis.`;
+          statusEl.textContent = `Selected: ${f.name} — Difficulty: ${diff}. Click “Analyze” to precompute a chart, or press Play for live analysis.`;
         }
       });
     }
