@@ -20,11 +20,10 @@
 
   // New top-level controls
   const newSongBtn = $('#newSongBtn');
-  const pauseBtn = $('#pauseBtn');
-  const playBtn = $('#playBtn');
-  const restartBtn = $('#restartBtn');
+  const pausePlayBtn = $('#pausePlayBtn');
 
   const gridlinesContainer = $('#gridlines');
+  const hitLine = $('#hitLine');
 
   const comboEl = $('#combo');
   const comboValueEl = comboEl ? comboEl.querySelector('.value') : null;
@@ -88,6 +87,7 @@
     playChartBtn,
     difficultySelect,
     gridlinesContainer,
+    hitLine,
     comboEl,
     comboValueEl,
     comboToastEl,
@@ -126,9 +126,7 @@
     setupGenerate,
     setupStart,
     newSongBtn,
-    pauseBtn,
-    playBtn,
-    restartBtn,
+    pausePlayBtn,
     setupOpenSettings,
     setupSongName
   };

@@ -12,6 +12,10 @@
 
   // Measure playfield hit-line
   window.RG.State.measure(window.RG.State.state);
+  // Initialize hit-line fire effect at 0
+  if (window.RG.UI && window.RG.UI.updateHitLineFire) {
+    window.RG.UI.updateHitLineFire(window.RG.State.state);
+  }
   window.addEventListener('resize', () => window.RG.State.measure(window.RG.State.state));
 
   // Wire up input handlers

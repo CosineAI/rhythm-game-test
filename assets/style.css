@@ -206,6 +206,33 @@ main {
   z-index: 3;
 }
 
+/* Combo-reactive green fire along the hit line */
+.hit-fire {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--keycaps-h) + 12px - 2px);
+  height: var(--fire-h, 0px);
+  opacity: var(--fire-opacity, 0);
+  background:
+    radial-gradient(80% 60% at 50% 100%, rgba(124,244,139,0.60), rgba(124,244,139,0.18) 70%, rgba(124,244,139,0.0)),
+    radial-gradient(50% 50% at 20% 100%, rgba(124,244,139,0.40), rgba(124,244,139,0.0) 70%),
+    radial-gradient(50% 50% at 80% 100%, rgba(124,244,139,0.40), rgba(124,244,139,0.0) 70%),
+    linear-gradient(180deg, rgba(124,244,139,0.35), rgba(124,244,139,0.08) 60%, rgba(124,244,139,0.0));
+  filter: blur(var(--fire-blur, 2px));
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 3; /* sit with hit-line */
+  transform-origin: center bottom;
+  animation: fireFlicker var(--fire-flicker, 900ms) ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes fireFlicker {
+  0%   { transform: translateY(0) scaleY(1.00); }
+  50%  { transform: translateY(-4px) scaleY(1.06); }
+  100% { transform: translateY(0) scaleY(1.00); }
+}
+
 /* Upward green glow effect on successful hits — expands from center outward */
 .lane .glow {
   position: absolute;
