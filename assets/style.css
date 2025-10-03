@@ -206,7 +206,8 @@ main {
   z-index: 3;
 }
 
-/* Combo-reactive green fire along the hit line */
+/* Combo-reactive green fire along the hit line
+   Base glow + animated flame tongues toward the top edge */
 .hit-fire {
   position: absolute;
   left: 0; right: 0;
@@ -223,13 +224,39 @@ main {
   pointer-events: none;
   z-index: 3; /* sit with hit-line */
   transform-origin: center bottom;
-  animation: fireFlicker var(--fire-flicker, 900ms) ease-in-out infinite;
+  animation: fireFlicker var(--fire-flicker, 900ms) ease-in-out infinite alternate;
   will-change: transform, opacity, filter;
+}
+
+/* Flame tongues overlay to make the top edge more \"fire-like\" */
+.hit-fire::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 0;
+  height: 100%;
+  background:
+    conic-gradient(at 10% 0%, rgba(124, 244, 139, 0.50) 0 40deg, transparent 40deg 360deg),
+    conic-gradient(at 30% 0%, rgba(124, 244, 139, 0.45) 0 48deg, transparent 48deg 360deg),
+    conic-gradient(at 50% 0%, rgba(124, 244, 139, 0.50) 0 42deg, transparent 42deg 360deg),
+    conic-gradient(at 70% 0%, rgba(124, 244, 139, 0.45) 0 50deg, transparent 50deg 360deg),
+    conic-gradient(at 90% 0%, rgba(124, 244, 139, 0.50) 0 44deg, transparent 44deg 360deg);
+  mix-blend-mode: screen;
+  filter: blur(calc(var(--fire-blur, 2px) + 0.6px));
+  opacity: var(--fire-opacity, 0);
+  transform-origin: center bottom;
+  animation: fireTongues var(--fire-flicker, 900ms) ease-in-out infinite alternate;
 }
 
 @keyframes fireFlicker {
   0%   { transform: translateY(0) scaleY(1.00); }
   50%  { transform: translateY(-4px) scaleY(1.06); }
+  100% { transform: translateY(0) scaleY(1.00); }
+}
+
+@keyframes fireTongues {
+  0%   { transform: translateY(0) scaleY(1.00); }
+  50%  { transform: translateY(-3px) scaleY(1.04); }
   100% { transform: translateY(0) scaleY(1.00); }
 }
 

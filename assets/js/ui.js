@@ -53,12 +53,13 @@
     if (!fireEl) return;
     const c = state.combo || 0;
     let h = 0, op = 0, blur = '0px', dur = '900ms';
-    if (c >= 200) { h = 220; op = 0.95; blur = '3.2px'; dur = '600ms'; }
-    else if (c >= 150) { h = 190; op = 0.90; blur = '3.0px'; dur = '640ms'; }
-    else if (c >= 100) { h = 160; op = 0.85; blur = '2.8px'; dur = '700ms'; }
-    else if (c >= 50)  { h = 120; op = 0.78; blur = '2.6px'; dur = '760ms'; }
-    else if (c >= 20)  { h = 90;  op = 0.68; blur = '2.4px'; dur = '820ms'; }
-    else if (c >= 10)  { h = 60;  op = 0.58; blur = '2.2px'; dur = '860ms'; }
+    // Slightly shorter heights for a tighter flame
+    if (c >= 200) { h = 176; op = 0.95; blur = '3.2px'; dur = '600ms'; }
+    else if (c >= 150) { h = 152; op = 0.90; blur = '3.0px'; dur = '640ms'; }
+    else if (c >= 100) { h = 128; op = 0.85; blur = '2.8px'; dur = '700ms'; }
+    else if (c >= 50)  { h = 100; op = 0.78; blur = '2.6px'; dur = '760ms'; }
+    else if (c >= 20)  { h = 75;  op = 0.68; blur = '2.4px'; dur = '820ms'; }
+    else if (c >= 10)  { h = 50;  op = 0.58; blur = '2.2px'; dur = '860ms'; }
     else { h = 0; op = 0; blur = '0px'; dur = '900ms'; }
     fireEl.style.setProperty('--fire-h', h + 'px');
     fireEl.style.setProperty('--fire-opacity', String(op));
