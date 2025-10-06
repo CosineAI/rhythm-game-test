@@ -4,7 +4,7 @@
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
+      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, generationMethod: 'classic' };
       const obj = JSON.parse(raw);
       const kb = Array.isArray(obj.keyBindings) && obj.keyBindings.length === 5 ? obj.keyBindings : ['z','s','x','d','c'];
       return {
@@ -13,10 +13,11 @@
         chartPadMs: typeof obj.chartPadMs === 'number' ? obj.chartPadMs : 3000,
         keyBindings: kb.map(k => String(k || '').toLowerCase().slice(0,1)),
         fallSpeedMult: (typeof obj.fallSpeedMult === 'number' && obj.fallSpeedMult > 0) ? obj.fallSpeedMult : 1.0,
-        gridlinesEnabled: !!obj.gridlinesEnabled
+        gridlinesEnabled: !!obj.gridlinesEnabled,
+        generationMethod: (obj.generationMethod === 'classic' || obj.generationMethod === 'chord_v15') ? obj.generationMethod : 'classic'
       };
     } catch {
-      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
+      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, generationMethod: 'classic' };
     }
   }
 
@@ -159,6 +160,9 @@
 
     if (showGridlines) showGridlines.checked = getGridlinesEnabled();
 
+    // Reflect generation method into setup control if present
+    if (setupGenMethod) setupGenMethod.value = getGenerationMethod();
+
     settingsModal.classList.remove('hidden');
     settingsModal.setAttribute('aria-hidden', 'false');
   }
@@ -223,7 +227,8 @@
       settingsSave,
       settingsCancel,
       difficultySelect,
-      statusEl
+      statusEl,
+      setupGenMethod
     } = window.RG.Dom;
 
     // Apply persisted difficulty to the visible control
@@ -348,6 +353,16 @@
     // Apply persisted settings immediately if needed
   }
 
+  function getGenerationMethod() {
+    return cache.generationMethod || 'classic';
+  }
+
+  function setGenerationMethod(m) {
+    const allowed = ['classic','chord_v15'];
+    cache.generationMethod = allowed.includes(m) ? m : 'classic';
+    save(cache);
+  }
+
   window.RG.Settings = {
     init,
     openModal,
@@ -364,6 +379,8 @@
     getFallSpeedMult,
     setFallSpeedMult,
     getGridlinesEnabled,
-    setGridlinesEnabled
+    setGridlinesEnabled,
+    getGenerationMethod,
+    setGenerationMethod
   };
 })();

@@ -56,6 +56,7 @@
   const setupModal = $('#setupModal');
   const setupFile = $('#setupFile');
   const setupDifficulty = $('#setupDifficulty');
+  const setupGenMethod = $('#setupGenMethod');
   const setupGenerate = $('#setupGenerate');
   const setupStart = $('#setupStart');
   const setupOpenSettings = $('#setupOpenSettings');
@@ -128,6 +129,7 @@
     newSongBtn,
     pausePlayBtn,
     setupOpenSettings,
-    setupSongName
+    setupSongName,
+    setupGenMethod
   };
 })();

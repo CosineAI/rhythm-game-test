@@ -66,12 +66,18 @@
     }
     if (setupStart) setupStart.disabled = true;
     try {
-      await window.RG.Chart.precomputeChartFromFile(state, selectedFile);
+      const method = window.RG.Settings.getGenerationMethod();
+      if (method === 'chord_v15' && window.RG.Chords && window.RG.Chords.precomputeChordChartFromFileV15) {
+        await window.RG.Chords.precomputeChordChartFromFileV15(state, selectedFile);
+      } else {
+        await window.RG.Chart.precomputeChartFromFile(state, selectedFile);
+      }
       // Remember selection on state for replay
       state._selectedFile = selectedFile;
       if (statusEl) {
         const diff = window.RG.Difficulty.getDifficultyParams().name;
-        statusEl.textContent = `Chart ready: ${selectedFile.name} — ${diff} (${state.precomputedChart && state.precomputedChart.notes ? state.precomputedChart.notes.length : 0} notes).`;
+        const methodName = method === 'chord_v15' ? 'Chord v1.5' : 'Classic';
+        statusEl.textContent = `Chart ready: ${selectedFile.name} — ${diff} — ${methodName} (${state.precomputedChart && state.precomputedChart.notes ? state.precomputedChart.notes.length : 0} notes).`;
       }
       if (setupStart) setupStart.disabled = !(state.precomputedChart && state.precomputedChart.notes && state.precomputedChart.notes.length);
     } catch (e) {
@@ -123,9 +129,31 @@
         if (setupStart) setupStart.disabled = true;
         if (statusEl && selectedFile) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff}.`;
+          const methodName = window.RG.Settings.getGenerationMethod() === 'chord_v15' ? 'Chord v1.5' : 'Classic';
+          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff} — ${methodName}.`;
         }
       });
+    }
+
+    // Generation method toggle
+    if (window.RG.Dom.setupGenMethod) {
+      window.RG.Dom.setupGenMethod.addEventListener('change', () => {
+        const m = window.RG.Dom.setupGenMethod.value;
+        window.RG.Settings.setGenerationMethod(m);
+        // Invalidate chart when method changes
+        const state = window.RG.State.state;
+        if (state) state.precomputedChart = null;
+        if (setupStart) setupStart.disabled = true;
+        if (statusEl && selectedFile) {
+          const diff = window.RG.Difficulty.getDifficultyParams().name;
+          const methodName = m === 'chord_v15' ? 'Chord v1.5' : 'Classic';
+          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff} — ${methodName}.`;
+        }
+      });
+      // Prefill from settings on init
+      try {
+        window.RG.Dom.setupGenMethod.value = window.RG.Settings.getGenerationMethod();
+      } catch {}
     }
 
     if (setupGenerate) {

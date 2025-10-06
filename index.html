@@ -217,6 +217,14 @@
               <option value="hard">Hard</option>
             </select>
           </div>
+          <div class="col">
+            <label for="setupGenMethod">Generation Method</label>
+            <select id="setupGenMethod" class="select">
+              <option value="classic" selected>Classic</option>
+              <option value="chord_v15">Chord-focused v1.5</option>
+            </select>
+            <small class="muted">Classic: onset-based. v1.5: chord-guided arpeggios and voicings.</small>
+          </div>
           <div class="col align-end">
             <label>&nbsp;</label>
             <button id="setupGenerate" class="btn">Generate Chart</button>
@@ -240,6 +248,7 @@
   <script src="assets/js/algo.js"></script>
   <script src="assets/js/audio.js"></script>
   <script src="assets/js/chart.js"></script>
+  <script src="assets/js/chords.js"></script>
   <script src="assets/js/notes.js"></script>
   <script src="assets/js/ui.js"></script>
   <script src="assets/js/grid.js"></script>
