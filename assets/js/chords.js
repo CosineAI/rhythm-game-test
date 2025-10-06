@@ -188,10 +188,10 @@
     // Difficulty-based chord confidence threshold (lower = more sensitive)
     function getChordConfThreshold(d) {
       const n = (d && d.name) || 'Normal';
-      if (n === 'Hard') return 0.020;
-      if (n === 'Normal') return 0.015;
-      if (n === 'Easy') return 0.012;
-      return 0.010; // Very Easy
+      if (n === 'Hard') return 0.012;
+      if (n === 'Normal') return 0.010;
+      if (n === 'Easy') return 0.008;
+      return 0.006; // Very Easy
     }
     const chordThresh = getChordConfThreshold(diff);
 
@@ -201,7 +201,7 @@
       chordLabels[i] = bestChordFromChroma(chromaSeq[i], chordThresh);
     }
 
-    // Fill short gaps by carrying forward last valid chord up to 2s
+    // Fill short gaps by carrying forward last valid chord up to 3s
     const filledLabels = chordLabels.slice();
     let lastValid = null;
     let lastValidTime = null;
@@ -211,7 +211,7 @@
       if (label.type !== 'none' && label.root >= 0) {
         lastValid = label;
         lastValidTime = t;
-      } else if (lastValid && lastValidTime != null && (t - lastValidTime) <= 2000) {
+      } else if (lastValid && lastValidTime != null && (t - lastValidTime) <= 3000) {
         filledLabels[i] = lastValid;
       }
     }
@@ -249,29 +249,48 @@
       let t0 = start;
       // align to nearest beat if beats exist
       if (tempo && tempo.periodMs > 0 && peaks.length) {
-        // use first peak <= start
+        // use last peak <= start as anchor
         let anchor = peaks[0];
         for (let i = 1; i < peaks.length; i++) {
           if (peaks[i] <= start) anchor = peaks[i];
           else break;
         }
-        // shift t0 forward to align to beat grid
-        const offset = (start - anchor) % periodMs;
-        t0 = start + (periodMs - offset);
+        // normalize modulo to positive and align within [start, start + period)
+        const offsetRaw = start - anchor;
+        const offset = ((offsetRaw % periodMs) + periodMs) % periodMs;
+        const tAligned = start + ((periodMs - offset) % periodMs);
+        t0 = (tAligned <= end) ? tAligned : start;
       }
 
-      let step = periodMs; // one hit per beat
-      // increase density on harder difficulties
-      if (diff.name === 'Hard') step = periodMs / 2; // 8th notes
-      else if (diff.name === 'Normal') step = periodMs * 0.75;
-      else if (diff.name === 'Easy') step = periodMs; // beats
-      else step = Math.min(periodMs * 1.25, 450); // Very Easy
+      // Step selection: use tempo when available, otherwise fallback
+      let step;
+      if (tempo && tempo.periodMs > 0) {
+        const n = diff.name;
+        const scale = (n === 'Hard') ? 0.50 : (n === 'Normal') ? 0.75 : (n === 'Easy') ? 1.00 : 1.10;
+        step = periodMs * scale;
+        // Upper bounds to avoid overly sparse output
+        const clampMax = (n === 'Hard') ? 450 : (n === 'Normal') ? 600 : (n === 'Easy') ? 700 : 800;
+        if (step > clampMax) step = clampMax;
+      } else {
+        // Fallback when tempo is unknown
+        const n = diff.name;
+        step = (n === 'Hard') ? 450 : (n === 'Normal') ? 600 : (n === 'Easy') ? 700 : 800;
+      }
+      // Lower bound to avoid excessively dense output
+      step = Math.max(200, step);
 
       let idx = 0;
+      let placed = 0;
       for (let t = t0; t <= end; t += step) {
         const lane = pattern[idx % pattern.length];
         notes.push({ timeMs: t, lane });
         idx++;
+        placed++;
+      }
+      // Ensure at least one note per segment
+      if (placed === 0) {
+        const lane = pattern[0];
+        notes.push({ timeMs: start, lane });
       }
     }
 
