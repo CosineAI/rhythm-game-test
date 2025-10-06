@@ -45,7 +45,7 @@
     return { majors, minors };
   })();
 
-  function bestChordFromChroma(chroma) {
+  function bestChordFromChroma(chroma, threshold) {
     let best = { type: 'none', root: -1, score: -1 };
     // normalize chroma
     const sum = chroma.reduce((a,b)=>a+b,0);
@@ -63,7 +63,8 @@
       if (sMaj > best.score) best = { type: 'major', root, score: sMaj };
       if (sMin > best.score) best = { type: 'minor', root, score: sMin };
     }
-    if (best.score < 0.05) return { type: 'none', root: -1, score: best.score };
+    const thr = (typeof threshold === 'number') ? threshold : 0.02;
+    if (best.score < thr) return { type: 'none', root: -1, score: best.score };
     return best;
   }
 
@@ -184,17 +185,42 @@
     const tempo = estimateTempoFromPeaks(peaks);
     const PAD_MS = (window.RG.Settings && window.RG.Settings.getChartPadMs) ? window.RG.Settings.getChartPadMs() : 3000;
 
-    // Chord detection: slide over frames and pick best triad; segment by changes
+    // Difficulty-based chord confidence threshold (lower = more sensitive)
+    function getChordConfThreshold(d) {
+      const n = (d && d.name) || 'Normal';
+      if (n === 'Hard') return 0.020;
+      if (n === 'Normal') return 0.015;
+      if (n === 'Easy') return 0.012;
+      return 0.010; // Very Easy
+    }
+    const chordThresh = getChordConfThreshold(diff);
+
+    // Chord detection: slide over frames and pick best triad
     const chordLabels = new Array(frameCount);
     for (let i = 0; i < frameCount; i++) {
-      chordLabels[i] = bestChordFromChroma(chromaSeq[i]);
+      chordLabels[i] = bestChordFromChroma(chromaSeq[i], chordThresh);
+    }
+
+    // Fill short gaps by carrying forward last valid chord up to 2s
+    const filledLabels = chordLabels.slice();
+    let lastValid = null;
+    let lastValidTime = null;
+    for (let i = 0; i < frameCount; i++) {
+      const label = filledLabels[i];
+      const t = timesMs[i];
+      if (label.type !== 'none' && label.root >= 0) {
+        lastValid = label;
+        lastValidTime = t;
+      } else if (lastValid && lastValidTime != null && (t - lastValidTime) <= 2000) {
+        filledLabels[i] = lastValid;
+      }
     }
 
     // Segment chords: consecutive frames with same root/type
     const segments = [];
     let cur = null;
     for (let i = 0; i < frameCount; i++) {
-      const label = chordLabels[i];
+      const label = filledLabels[i];
       const t = timesMs[i];
       if (!cur || label.type !== cur.type || label.root !== cur.root) {
         if (cur) cur.endMs = t;
@@ -236,10 +262,10 @@
 
       let step = periodMs; // one hit per beat
       // increase density on harder difficulties
-      if (diff.name === 'hard') step = periodMs / 2; // 8th notes
-      else if (diff.name === 'normal') step = periodMs * 0.75;
-      else if (diff.name === 'easy') step = periodMs; // beats
-      else step = Math.min(periodMs * 1.25, 450);
+      if (diff.name === 'Hard') step = periodMs / 2; // 8th notes
+      else if (diff.name === 'Normal') step = periodMs * 0.75;
+      else if (diff.name === 'Easy') step = periodMs; // beats
+      else step = Math.min(periodMs * 1.25, 450); // Very Easy
 
       let idx = 0;
       for (let t = t0; t <= end; t += step) {
@@ -276,7 +302,7 @@
     if (statusEl) {
       statusEl.textContent = notes.length
         ? `Chart ready (Chord v1.5, ${diff.name}, ${notes.length} notes). Click Start to play.`
-        : 'Chord v1.5: no confident chords detected. Try another file.';
+        : 'Chord v1.5: sensitivity may be too low. Try Easy/Hard or another file.';
     }
   }
 
