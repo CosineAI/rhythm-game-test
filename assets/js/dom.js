@@ -20,7 +20,10 @@
 
   // New top-level controls
   const newSongBtn = $('#newSongBtn');
-  const pausePlayBtn = $('#pausePlayBtn');
+  const pausePlayBtn = $('#pausePlayBtn'); // legacy combined control (unused in current UI)
+  const pauseBtn = $('#pauseBtn');
+  const playBtn = $('#playBtn');
+  const restartBtn = $('#restartBtn');
 
   const gridlinesContainer = $('#gridlines');
   const hitLine = $('#hitLine');
@@ -128,8 +131,10 @@
     setupStart,
     newSongBtn,
     pausePlayBtn,
+    pauseBtn,
+    playBtn,
+    restartBtn,
     setupOpenSettings,
-    setupSongName,
-    setupGenMethod
+    setupSongName
   };
 })();
