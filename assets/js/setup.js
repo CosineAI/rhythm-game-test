@@ -66,9 +66,11 @@
     }
     if (setupStart) setupStart.disabled = true;
     try {
-      const method = window.RG.Settings.getGenerationMethod();
-      if (method === 'chord_v15' && window.RG.Chords && window.RG.Chords.precomputeChordChartFromFileV15) {
-        await window.RG.Chords.precomputeChordChartFromFileV15(state, selectedFile);
+      let method = window.RG.Settings.getGenerationMethod();
+      // migrate legacy option
+      if (method === 'chord_v15') method = 'beat_v15';
+      if (method === 'beat_v15' && window.RG.BeatChords && window.RG.BeatChords.precomputeBeatChordChartFromFileV15) {
+        await window.RG.BeatChords.precomputeBeatChordChartFromFileV15(state, selectedFile);
       } else {
         await window.RG.Chart.precomputeChartFromFile(state, selectedFile);
       }
@@ -76,7 +78,7 @@
       state._selectedFile = selectedFile;
       if (statusEl) {
         const diff = window.RG.Difficulty.getDifficultyParams().name;
-        const methodName = method === 'chord_v15' ? 'Chord v1.5' : 'Classic';
+        const methodName = method === 'beat_v15' ? 'Beat+Chord v1.5' : 'Classic';
         statusEl.textContent = `Chart ready: ${selectedFile.name} — ${diff} — ${methodName} (${state.precomputedChart && state.precomputedChart.notes ? state.precomputedChart.notes.length : 0} notes).`;
       }
       if (setupStart) setupStart.disabled = !(state.precomputedChart && state.precomputedChart.notes && state.precomputedChart.notes.length);
@@ -129,7 +131,8 @@
         if (setupStart) setupStart.disabled = true;
         if (statusEl && selectedFile) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          const methodName = window.RG.Settings.getGenerationMethod() === 'chord_v15' ? 'Chord v1.5' : 'Classic';
+          const gm = window.RG.Settings.getGenerationMethod();
+          const methodName = gm === 'beat_v15' ? 'Beat+Chord v1.5' : 'Classic';
           statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff} — ${methodName}.`;
         }
       });
@@ -146,13 +149,15 @@
         if (setupStart) setupStart.disabled = true;
         if (statusEl && selectedFile) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          const methodName = m === 'chord_v15' ? 'Chord v1.5' : 'Classic';
+          const methodName = m === 'beat_v15' ? 'Beat+Chord v1.5' : 'Classic';
           statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff} — ${methodName}.`;
         }
       });
-      // Prefill from settings on init
+      // Prefill from settings on init (migrate legacy chord_v15 to beat_v15)
       try {
-        window.RG.Dom.setupGenMethod.value = window.RG.Settings.getGenerationMethod();
+        let gm = window.RG.Settings.getGenerationMethod();
+        if (gm === 'chord_v15') gm = 'beat_v15';
+        window.RG.Dom.setupGenMethod.value = gm;
       } catch {}
     }
 

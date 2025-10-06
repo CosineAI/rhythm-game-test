@@ -7,6 +7,7 @@
       if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, generationMethod: 'classic' };
       const obj = JSON.parse(raw);
       const kb = Array.isArray(obj.keyBindings) && obj.keyBindings.length === 5 ? obj.keyBindings : ['z','s','x','d','c'];
+      const gm = (obj.generationMethod === 'classic' || obj.generationMethod === 'chord_v15' || obj.generationMethod === 'beat_v15') ? obj.generationMethod : 'classic';
       return {
         inputOffsetMs: typeof obj.inputOffsetMs === 'number' ? obj.inputOffsetMs : 0,
         difficulty: (obj.difficulty === 'veryeasy' || obj.difficulty === 'easy' || obj.difficulty === 'hard') ? obj.difficulty : 'normal',
@@ -14,7 +15,7 @@
         keyBindings: kb.map(k => String(k || '').toLowerCase().slice(0,1)),
         fallSpeedMult: (typeof obj.fallSpeedMult === 'number' && obj.fallSpeedMult > 0) ? obj.fallSpeedMult : 1.0,
         gridlinesEnabled: !!obj.gridlinesEnabled,
-        generationMethod: (obj.generationMethod === 'classic' || obj.generationMethod === 'chord_v15') ? obj.generationMethod : 'classic'
+        generationMethod: gm
       };
     } catch {
       return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, generationMethod: 'classic' };
@@ -123,7 +124,8 @@
       keyBind0, keyBind1, keyBind2, keyBind3, keyBind4,
       fallSpeedRange, fallSpeedNumber,
       showGridlines,
-      difficultySelect
+      difficultySelect,
+      setupGenMethod
     } = window.RG.Dom;
     if (!settingsModal) return;
 
@@ -161,7 +163,11 @@
     if (showGridlines) showGridlines.checked = getGridlinesEnabled();
 
     // Reflect generation method into setup control if present
-    if (setupGenMethod) setupGenMethod.value = getGenerationMethod();
+    if (setupGenMethod) {
+      let gm = getGenerationMethod();
+      if (gm === 'chord_v15') gm = 'beat_v15'; // migrate legacy choice to new implementation
+      setupGenMethod.value = gm;
+    }
 
     settingsModal.classList.remove('hidden');
     settingsModal.setAttribute('aria-hidden', 'false');
@@ -358,7 +364,7 @@
   }
 
   function setGenerationMethod(m) {
-    const allowed = ['classic','chord_v15'];
+    const allowed = ['classic','chord_v15','beat_v15'];
     cache.generationMethod = allowed.includes(m) ? m : 'classic';
     save(cache);
   }
