@@ -234,7 +234,10 @@
       settingsCancel,
       difficultySelect,
       statusEl,
-      setupGenMethod
+      setupGenMethod,
+      presetPiano,
+      presetRow,
+      presetSplit
     } = window.RG.Dom;
 
     // Apply persisted difficulty to the visible control
@@ -295,6 +298,27 @@
       });
     }
     [keyBind0, keyBind1, keyBind2, keyBind3, keyBind4].forEach(normalizeKeyInput);
+
+    // Keybind presets
+    function applyPreset(binds) {
+      const arr = binds.map(k => String(k || '').toLowerCase().slice(0,1));
+      // Populate inputs
+      if (keyBind0) keyBind0.value = arr[0].toUpperCase();
+      if (keyBind1) keyBind1.value = arr[1].toUpperCase();
+      if (keyBind2) keyBind2.value = arr[2].toUpperCase();
+      if (keyBind3) keyBind3.value = arr[3].toUpperCase();
+      if (keyBind4) keyBind4.value = arr[4].toUpperCase();
+      // Persist immediately and refresh UI
+      setKeyBindings(arr);
+      if (window.RG.UI && window.RG.UI.refreshKeycapLabels) window.RG.UI.refreshKeycapLabels();
+      if (statusEl) {
+        const keyText = arr.map(k => k.toUpperCase()).join(' ');
+        statusEl.textContent = `Keybind preset applied: ${keyText}`;
+      }
+    }
+    if (presetPiano) presetPiano.addEventListener('click', () => applyPreset(['z','s','x','d','c']));
+    if (presetRow) presetRow.addEventListener('click', () => applyPreset(['z','x','c','v','b']));
+    if (presetSplit) presetSplit.addEventListener('click', () => applyPreset(['z','x','c','.','/']));
 
     // Save
     if (settingsSave) settingsSave.addEventListener('click', () => {

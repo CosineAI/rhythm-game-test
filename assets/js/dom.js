@@ -54,6 +54,9 @@
   const showGridlines = $('#showGridlines');
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
+  const presetPiano = $('#presetPiano');
+  const presetRow = $('#presetRow');
+  const presetSplit = $('#presetSplit');
 
   // Setup modal elements
   const setupModal = $('#setupModal');
@@ -115,6 +118,9 @@
     showGridlines,
     settingsSave,
     settingsCancel,
+    presetPiano,
+    presetRow,
+    presetSplit,
     resultsModal,
     resultsReplay,
     resultsNewSong,
