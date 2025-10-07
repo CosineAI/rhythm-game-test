@@ -4,19 +4,21 @@
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
+      if (!raw) return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, generationMethod: 'classic' };
       const obj = JSON.parse(raw);
       const kb = Array.isArray(obj.keyBindings) && obj.keyBindings.length === 5 ? obj.keyBindings : ['z','s','x','d','c'];
+      const gm = (obj.generationMethod === 'classic' || obj.generationMethod === 'chord_v15' || obj.generationMethod === 'beat_v15') ? obj.generationMethod : 'classic';
       return {
         inputOffsetMs: typeof obj.inputOffsetMs === 'number' ? obj.inputOffsetMs : 0,
         difficulty: (obj.difficulty === 'veryeasy' || obj.difficulty === 'easy' || obj.difficulty === 'hard') ? obj.difficulty : 'normal',
         chartPadMs: typeof obj.chartPadMs === 'number' ? obj.chartPadMs : 3000,
         keyBindings: kb.map(k => String(k || '').toLowerCase().slice(0,1)),
         fallSpeedMult: (typeof obj.fallSpeedMult === 'number' && obj.fallSpeedMult > 0) ? obj.fallSpeedMult : 1.0,
-        gridlinesEnabled: !!obj.gridlinesEnabled
+        gridlinesEnabled: !!obj.gridlinesEnabled,
+        generationMethod: gm
       };
     } catch {
-      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false };
+      return { inputOffsetMs: 0, difficulty: 'normal', chartPadMs: 3000, keyBindings: ['z','s','x','d','c'], fallSpeedMult: 1.0, gridlinesEnabled: false, generationMethod: 'classic' };
     }
   }
 
@@ -122,7 +124,8 @@
       keyBind0, keyBind1, keyBind2, keyBind3, keyBind4,
       fallSpeedRange, fallSpeedNumber,
       showGridlines,
-      difficultySelect
+      difficultySelect,
+      setupGenMethod
     } = window.RG.Dom;
     if (!settingsModal) return;
 
@@ -158,6 +161,13 @@
     if (fallSpeedNumber) fallSpeedNumber.value = String(mult);
 
     if (showGridlines) showGridlines.checked = getGridlinesEnabled();
+
+    // Reflect generation method into setup control if present
+    if (setupGenMethod) {
+      let gm = getGenerationMethod();
+      if (gm === 'chord_v15') gm = 'beat_v15'; // migrate legacy choice to new implementation
+      setupGenMethod.value = gm;
+    }
 
     settingsModal.classList.remove('hidden');
     settingsModal.setAttribute('aria-hidden', 'false');
@@ -223,7 +233,11 @@
       settingsSave,
       settingsCancel,
       difficultySelect,
-      statusEl
+      statusEl,
+      setupGenMethod,
+      presetPiano,
+      presetRow,
+      presetSplit
     } = window.RG.Dom;
 
     // Apply persisted difficulty to the visible control
@@ -284,6 +298,27 @@
       });
     }
     [keyBind0, keyBind1, keyBind2, keyBind3, keyBind4].forEach(normalizeKeyInput);
+
+    // Keybind presets
+    function applyPreset(binds) {
+      const arr = binds.map(k => String(k || '').toLowerCase().slice(0,1));
+      // Populate inputs
+      if (keyBind0) keyBind0.value = arr[0].toUpperCase();
+      if (keyBind1) keyBind1.value = arr[1].toUpperCase();
+      if (keyBind2) keyBind2.value = arr[2].toUpperCase();
+      if (keyBind3) keyBind3.value = arr[3].toUpperCase();
+      if (keyBind4) keyBind4.value = arr[4].toUpperCase();
+      // Persist immediately and refresh UI
+      setKeyBindings(arr);
+      if (window.RG.UI && window.RG.UI.refreshKeycapLabels) window.RG.UI.refreshKeycapLabels();
+      if (statusEl) {
+        const keyText = arr.map(k => k.toUpperCase()).join(' ');
+        statusEl.textContent = `Keybind preset applied: ${keyText}`;
+      }
+    }
+    if (presetPiano) presetPiano.addEventListener('click', () => applyPreset(['z','s','x','d','c']));
+    if (presetRow) presetRow.addEventListener('click', () => applyPreset(['z','x','c','v','b']));
+    if (presetSplit) presetSplit.addEventListener('click', () => applyPreset(['z','x','c','.','/']));
 
     // Save
     if (settingsSave) settingsSave.addEventListener('click', () => {
@@ -348,6 +383,16 @@
     // Apply persisted settings immediately if needed
   }
 
+  function getGenerationMethod() {
+    return cache.generationMethod || 'classic';
+  }
+
+  function setGenerationMethod(m) {
+    const allowed = ['classic','chord_v15','beat_v15'];
+    cache.generationMethod = allowed.includes(m) ? m : 'classic';
+    save(cache);
+  }
+
   window.RG.Settings = {
     init,
     openModal,
@@ -364,6 +409,8 @@
     getFallSpeedMult,
     setFallSpeedMult,
     getGridlinesEnabled,
-    setGridlinesEnabled
+    setGridlinesEnabled,
+    getGenerationMethod,
+    setGenerationMethod
   };
 })();

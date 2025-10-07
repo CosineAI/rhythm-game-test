@@ -122,6 +122,11 @@
             <input type="text" id="keyBind3" class="keybind" maxlength="1" placeholder="D">
             <input type="text" id="keyBind4" class="keybind" maxlength="1" placeholder="C">
           </div>
+          <div class="inline-group">
+            <button id="presetPiano" class="btn">Piano style</button>
+            <button id="presetRow" class="btn">Row style</button>
+            <button id="presetSplit" class="btn">Split style</button>
+          </div>
           <small class="muted">Choose any five keys (one character each). Leftmost is the left lane.</small>
         </div>
 
@@ -217,10 +222,16 @@
               <option value="hard">Hard</option>
             </select>
           </div>
-          <div class="col align-end">
-            <label>&nbsp;</label>
-            <button id="setupGenerate" class="btn">Generate Chart</button>
+          <div class="col">
+            <label for="setupGenMethod">Generation Method</label>
+            <select id="setupGenMethod" class="select">
+              <option value="classic" selected>Classic</option>
+              <option value="beat_v15">Beat+Chord v1.5</option>
+            </select>
           </div>
+        </div>
+        <div class="form-row">
+          <button id="setupGenerate" class="btn primary wide">Generate Chart</button>
         </div>
       </div>
       <footer class="modal-footer">
@@ -240,6 +251,8 @@
   <script src="assets/js/algo.js"></script>
   <script src="assets/js/audio.js"></script>
   <script src="assets/js/chart.js"></script>
+  <script src="assets/js/chords.js"></script>
+  <script src="assets/js/beat_chords.js"></script>
   <script src="assets/js/notes.js"></script>
   <script src="assets/js/ui.js"></script>
   <script src="assets/js/grid.js"></script>

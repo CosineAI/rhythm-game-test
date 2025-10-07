@@ -20,7 +20,10 @@
 
   // New top-level controls
   const newSongBtn = $('#newSongBtn');
-  const pausePlayBtn = $('#pausePlayBtn');
+  const pausePlayBtn = $('#pausePlayBtn'); // legacy combined control (unused in current UI)
+  const pauseBtn = $('#pauseBtn');
+  const playBtn = $('#playBtn');
+  const restartBtn = $('#restartBtn');
 
   const gridlinesContainer = $('#gridlines');
   const hitLine = $('#hitLine');
@@ -51,11 +54,15 @@
   const showGridlines = $('#showGridlines');
   const settingsSave = $('#settingsSave');
   const settingsCancel = $('#settingsCancel');
+  const presetPiano = $('#presetPiano');
+  const presetRow = $('#presetRow');
+  const presetSplit = $('#presetSplit');
 
   // Setup modal elements
   const setupModal = $('#setupModal');
   const setupFile = $('#setupFile');
   const setupDifficulty = $('#setupDifficulty');
+  const setupGenMethod = $('#setupGenMethod');
   const setupGenerate = $('#setupGenerate');
   const setupStart = $('#setupStart');
   const setupOpenSettings = $('#setupOpenSettings');
@@ -111,6 +118,9 @@
     showGridlines,
     settingsSave,
     settingsCancel,
+    presetPiano,
+    presetRow,
+    presetSplit,
     resultsModal,
     resultsReplay,
     resultsNewSong,
@@ -127,6 +137,9 @@
     setupStart,
     newSongBtn,
     pausePlayBtn,
+    pauseBtn,
+    playBtn,
+    restartBtn,
     setupOpenSettings,
     setupSongName
   };

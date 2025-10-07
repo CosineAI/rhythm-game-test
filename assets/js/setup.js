@@ -66,12 +66,20 @@
     }
     if (setupStart) setupStart.disabled = true;
     try {
-      await window.RG.Chart.precomputeChartFromFile(state, selectedFile);
+      let method = window.RG.Settings.getGenerationMethod();
+      // migrate legacy option
+      if (method === 'chord_v15') method = 'beat_v15';
+      if (method === 'beat_v15' && window.RG.BeatChords && window.RG.BeatChords.precomputeBeatChordChartFromFileV15) {
+        await window.RG.BeatChords.precomputeBeatChordChartFromFileV15(state, selectedFile);
+      } else {
+        await window.RG.Chart.precomputeChartFromFile(state, selectedFile);
+      }
       // Remember selection on state for replay
       state._selectedFile = selectedFile;
       if (statusEl) {
         const diff = window.RG.Difficulty.getDifficultyParams().name;
-        statusEl.textContent = `Chart ready: ${selectedFile.name} — ${diff} (${state.precomputedChart && state.precomputedChart.notes ? state.precomputedChart.notes.length : 0} notes).`;
+        const methodName = method === 'beat_v15' ? 'Beat+Chord v1.5' : 'Classic';
+        statusEl.textContent = `Chart ready: ${selectedFile.name} — ${diff} — ${methodName} (${state.precomputedChart && state.precomputedChart.notes ? state.precomputedChart.notes.length : 0} notes).`;
       }
       if (setupStart) setupStart.disabled = !(state.precomputedChart && state.precomputedChart.notes && state.precomputedChart.notes.length);
     } catch (e) {
@@ -123,9 +131,34 @@
         if (setupStart) setupStart.disabled = true;
         if (statusEl && selectedFile) {
           const diff = window.RG.Difficulty.getDifficultyParams().name;
-          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff}.`;
+          const gm = window.RG.Settings.getGenerationMethod();
+          const methodName = gm === 'beat_v15' ? 'Beat+Chord v1.5' : 'Classic';
+          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff} — ${methodName}.`;
         }
       });
+    }
+
+    // Generation method toggle
+    if (window.RG.Dom.setupGenMethod) {
+      window.RG.Dom.setupGenMethod.addEventListener('change', () => {
+        const m = window.RG.Dom.setupGenMethod.value;
+        window.RG.Settings.setGenerationMethod(m);
+        // Invalidate chart when method changes
+        const state = window.RG.State.state;
+        if (state) state.precomputedChart = null;
+        if (setupStart) setupStart.disabled = true;
+        if (statusEl && selectedFile) {
+          const diff = window.RG.Difficulty.getDifficultyParams().name;
+          const methodName = m === 'beat_v15' ? 'Beat+Chord v1.5' : 'Classic';
+          statusEl.textContent = `Selected: ${selectedFile.name} — Difficulty: ${diff} — ${methodName}.`;
+        }
+      });
+      // Prefill from settings on init (migrate legacy chord_v15 to beat_v15)
+      try {
+        let gm = window.RG.Settings.getGenerationMethod();
+        if (gm === 'chord_v15') gm = 'beat_v15';
+        window.RG.Dom.setupGenMethod.value = gm;
+      } catch {}
     }
 
     if (setupGenerate) {
