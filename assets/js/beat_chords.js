@@ -162,14 +162,20 @@
 
     // Difficulty-based parameters
     const lanes = getActiveLaneIndices();
-    const baseChordProb = (diff.name === 'Hard') ? 0.32
-                          : (diff.name === 'Normal') ? 0.22
-                          : (diff.name === 'Easy') ? 0.12
-                          : 0.08; // Very Easy
+    // Base chance that any given beat becomes a two-key chord
+    const baseChordProb = (diff.name === 'Hard') ? 0.42
+                          : (diff.name === 'Normal') ? 0.30
+                          : (diff.name === 'Easy') ? 0.18
+                          : 0.10; // Very Easy
+    // Extra chance for a chord on strong (downbeat) positions
+    const strongChordProb = (diff.name === 'Hard') ? 1.00   // always chord on strong beats
+                           : (diff.name === 'Normal') ? 0.70
+                           : (diff.name === 'Easy') ? 0.35
+                           : 0.20;
     // Additional offbeat density for Hard/Normal
     const addOffbeatRatio = (diff.name === 'Hard') ? 0.35
-                           : (diff.name === 'Normal') ? 0.20
-                           : 0.08;
+                           : (diff.name === 'Normal') ? 0.22
+                           : 0.10;
 
     const notes = [];
     let prevLane = -1;
@@ -194,12 +200,17 @@
         lane = lanes[(idx + 1) % lanes.length];
       }
 
-      // Chord decision: probability boosted on strong beats
+      // Chord decision: probability boosted on strong beats (+ energy boost)
       const beatIdx = indexForTime(timesMs, t);
       const energy = rms[beatIdx] || 0;
       const boost = energy > strongThreshold ? 0.18 : 0.0;
-      const chordProb = Math.min(0.6, baseChordProb + boost);
-      const doChord = rng() < chordProb;
+      const isStrongBeat = (i % 4 === 0);
+      const chordProb = Math.min(0.85, baseChordProb + boost);
+      let doChord = rng() < chordProb;
+      if (!doChord && isStrongBeat) {
+        // force additional chance on strong beats; for Hard it's guaranteed
+        doChord = rng() < strongChordProb;
+      }
 
       if (doChord) {
         // Pick two distinct lanes: current lane + another far-apart one by energies
@@ -214,8 +225,21 @@
         let lane2 = lanes[second >= 0 ? second : ((lanes.indexOf(lane) + 2) % lanes.length)];
         // ensure distinct and spaced
         if (lane2 === lane) lane2 = lanes[(lanes.indexOf(lane) + 2) % lanes.length];
-        notes.push({ timeMs: t, lane });
-        notes.push({ timeMs: t, lane: lane2 });
+
+        // Occasionally add a 3rd tone on Hard strong beats for emphasis
+        if (diff.name === 'Hard' && isStrongBeat && rng() < 0.25 && lanes.length >= 5) {
+          // pick a third lane that is neither lane nor lane2
+          let lane3 = lanes[(lanes.indexOf(lane2) + 2) % lanes.length];
+          if (lane3 === lane || lane3 === lane2) {
+            lane3 = lanes[(lanes.indexOf(lane) + 3) % lanes.length];
+          }
+          notes.push({ timeMs: t, lane });
+          notes.push({ timeMs: t, lane: lane2 });
+          notes.push({ timeMs: t, lane: lane3 });
+        } else {
+          notes.push({ timeMs: t, lane });
+          notes.push({ timeMs: t, lane: lane2 });
+        }
       } else {
         notes.push({ timeMs: t, lane });
       }
